@@ -172,4 +172,12 @@ Diff2 diff_two_files(const std::vector<const std::string *> &a, const std::vecto
     return result;
 }
 
-
+int Diff2::num_common_lines() const
+{
+    int count = 0;
+    for (int i=0; i < this->v.size(); ++i) {
+        if (this->v[i].in_a && this->v[i].in_b)
+            ++count;
+    }
+    return count;
+}

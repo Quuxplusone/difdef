@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -28,6 +29,7 @@ struct Diff2 {
     void reverse() {
         std::reverse(v.begin(), v.end());
     }
+    int num_common_lines() const;
 };
 
 Diff2 diff_two_files(const std::vector<const std::string *> &a,
