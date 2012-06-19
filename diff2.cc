@@ -76,21 +76,21 @@ std::vector<const std::string *> lcs_unique(const std::vector<const std::string 
 }
 
 
-Diff diff_two_files(const std::vector<const std::string *> &a, const std::vector<const std::string *> &b)
+Diff2 diff_two_files(const std::vector<const std::string *> &a, const std::vector<const std::string *> &b)
 {
-    Diff result, suffix;
+    Diff2 result, suffix;
 
     int i = 0;
     while (i < a.size() && i < b.size() && a[i] == b[i]) {
         const std::string *line = a[i];
-        result.push_back(DiffLine(line, true, true));
+        result.push_back(Diff2::Line(line, true, true));
         ++i;
     }
     int ja = a.size();
     int jb = b.size();
     while (ja > i && jb > i && a[ja-1] == b[jb-1]) {
         const std::string *line = a[ja-1];
-        suffix.push_back(DiffLine(line, true, true));
+        suffix.push_back(Diff2::Line(line, true, true));
         --ja; --jb;
     }
     suffix.reverse();
@@ -137,9 +137,9 @@ Diff diff_two_files(const std::vector<const std::string *> &a, const std::vector
     if (uc.empty()) {
         /* Base case: There are no unique shared lines between a and b. */
         for (int k = i; k < ja; ++k)
-            result.push_back(DiffLine(a[k], true, false));
+            result.push_back(Diff2::Line(a[k], true, false));
         for (int k = i; k < jb; ++k)
-            result.push_back(DiffLine(b[k], false, true));
+            result.push_back(Diff2::Line(b[k], false, true));
     } else {
         /* Recurse on the interstices. */
         int ak = i;
@@ -158,7 +158,7 @@ Diff diff_two_files(const std::vector<const std::string *> &a, const std::vector
             assert(bk < jb);
             assert(a[ak] == uc[ucx]);
             assert(b[bk] == uc[ucx]);
-            result.push_back(DiffLine(uc[ucx], true, true));
+            result.push_back(Diff2::Line(uc[ucx], true, true));
             ++ak;
             ++bk;
         }

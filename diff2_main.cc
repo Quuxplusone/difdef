@@ -45,12 +45,12 @@ int main(int argc, char **argv)
         all_files.push_back(f);
     }
 
-    Diff result = diff_two_files(all_files[0].lines, all_files[1].lines);
+    Diff2 result = diff_two_files(all_files[0].lines, all_files[1].lines);
 
     /* Print out the diff. */
     const int n = result.size();
     for (int i=0; i < n; ++i) {
-        const DiffLine &line = result[i];
+        const Diff2::Line &line = result[i];
         if (line.in_a && line.in_b) {
             putchar(' ');
         } else if (line.in_a) {
