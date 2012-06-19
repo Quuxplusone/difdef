@@ -9,16 +9,18 @@
 
 #include "diffn.h"
 
+using namespace Difdef;
+
 struct stringfile {
     std::string filename;
     int fileid;
     StringSet *unique_lines;
     std::vector<const std::string *> lines;
-    
+
     stringfile(std::string fname, int fileid, StringSet &u):
         filename(fname), fileid(fileid), unique_lines(&u)
     {}
-    
+
     void read_lines();
     int size() const { return lines.size(); }
 };
@@ -38,7 +40,7 @@ int main(int argc, char **argv)
 {
     StringSet unique_lines;
     std::vector<stringfile> all_files;
-    
+
     NUM_FILES = argc-1;
 
     for (int i=1; i < argc; ++i) {

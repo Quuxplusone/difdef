@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+namespace Difdef {
+
 extern int NUM_FILES;
 
 class StringSet {
@@ -64,8 +66,6 @@ struct Diff {
     }
 };
 
-Diff diff_three_files(const std::vector<const std::string *> &a,
-                      const std::vector<const std::string *> &b,
-                      const std::vector<const std::string *> &c);
-
 Diff diff_n_files(const std::vector<const std::vector<const std::string *> *> &v);
+
+}

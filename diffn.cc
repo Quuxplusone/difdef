@@ -4,6 +4,8 @@
 
 #include "diffn.h"
 
+namespace Difdef {
+
 int NUM_FILES = 0;
 
 extern std::vector<const std::string *> lcs_unique(
@@ -74,7 +76,7 @@ Diff diff_diff_vs_vec(Diff &a, const std::vector<const std::string *> &b)
         if (std::find(ua.begin(), ua.end(), line) != ua.end())
            ub.push_back(line);
     }
-    
+
     /* Run patience diff on these unique lines. */
     std::vector<const std::string *> uab = lcs_unique(ua, ub);
 
@@ -118,15 +120,6 @@ Diff diff_diff_vs_vec(Diff &a, const std::vector<const std::string *> &b)
     return result;
 }
 
-Diff diff_three_files(const std::vector<const std::string *> &a_,
-                      const std::vector<const std::string *> &b,
-                      const std::vector<const std::string *> &c)
-{
-    Diff a = vec_to_diff1(a_);
-    Diff ab = diff_diff_vs_vec(a,b);
-    return diff_diff_vs_vec(ab,c);
-}
-
 Diff diff_n_files(const std::vector<const std::vector<const std::string *> *> &v)
 {
     assert(v.size() > 0);
@@ -135,4 +128,6 @@ Diff diff_n_files(const std::vector<const std::vector<const std::string *> *> &v
         d = diff_diff_vs_vec(d, *v[i]);
     }
     return d;
+}
+
 }
