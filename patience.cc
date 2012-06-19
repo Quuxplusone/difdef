@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace Difdef {
+namespace {
 
 struct PatienceNode {
     int value;
@@ -14,18 +14,18 @@ struct PatienceNode {
     ~PatienceNode() { delete down; }
 };
 
-static std::vector<int> patience_sequence(const std::vector<int> &v)
+std::vector<int> patience_longest_increasing_sequence(const std::vector<int> &v)
 {
     std::vector<int> result;
     if (v.empty())
         return result;
 
     std::vector<PatienceNode *> top_cards;
-    for (int i = 0; i < v.size(); ++i) {
+    for (size_t i = 0; i < v.size(); ++i) {
         int val = v[i];
         /* Put "val" into the leftmost pile whose top card is greater than it. */
         bool handled = false;
-        for (int j=0; j < top_cards.size(); ++j) {
+        for (size_t j=0; j < top_cards.size(); ++j) {
             if (top_cards[j]->value > val) {
                 PatienceNode *left = (j > 0) ? top_cards[j-1] : NULL;
                 top_cards[j] = new PatienceNode(val, left, top_cards[j]);
@@ -40,11 +40,11 @@ static std::vector<int> patience_sequence(const std::vector<int> &v)
     }
 
     /* Extract the longest common subsequence. */
-    int n = top_cards.size();
-    assert(n != 0);
+    assert(!top_cards.empty());
+    size_t n = top_cards.size();
     result.resize(n);
-    PatienceNode *p = top_cards[top_cards.size()-1];
-    for (int i=0; i < n; ++i) {
+    PatienceNode *p = top_cards[n-1];
+    for (size_t i=0; i < n; ++i) {
         assert(p != NULL);
         result[n-i-1] = p->value;
         p = p->left;
@@ -56,20 +56,21 @@ static std::vector<int> patience_sequence(const std::vector<int> &v)
     return result;
 }
 
-std::vector<const std::string *> lcs_unique(const std::vector<const std::string *> &a,
-                                      const std::vector<const std::string *> &b)
+std::vector<const std::string *> patience_unique_lcs(
+        const std::vector<const std::string *> &a,
+        const std::vector<const std::string *> &b)
 {
     size_t n = a.size();
     assert(b.size() == n);
     std::vector<int> indices(n);
-    for (int i=0; i < n; ++i) {
+    for (size_t i=0; i < n; ++i) {
         int index_of_ai_in_b = std::find(b.begin(), b.end(), a[i]) - b.begin();
-        assert(0 <= index_of_ai_in_b && index_of_ai_in_b < n);
+        assert(0 <= index_of_ai_in_b && index_of_ai_in_b < (int)n);
         indices[i] = index_of_ai_in_b;
     }
-    std::vector<int> ps = patience_sequence(indices);
+    std::vector<int> ps = patience_longest_increasing_sequence(indices);
     std::vector<const std::string *> result;
-    for (int i=0; i < ps.size(); ++i) {
+    for (size_t i=0; i < ps.size(); ++i) {
         result.push_back(b[ps[i]]);
     }
     return result;
