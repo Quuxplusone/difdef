@@ -12,9 +12,20 @@ struct DiffLine {
         text(t), in_a(a), in_b(b) { }
 };
 
-struct Diff : public std::vector<DiffLine> {
+class Diff {
+    std::vector<DiffLine> v;
+public:
+    DiffLine &operator[](int i) { return v[i]; }
+    const DiffLine &operator[](int i)  const { return v[i]; }
+    int size() const { return v.size(); }
+    void push_back(const DiffLine &dl) {
+        v.push_back(dl);
+    }
     void append(const Diff &d) {
-        this->insert(this->end(), d.begin(), d.end());
+        v.insert(v.end(), d.v.begin(), d.v.end());
+    }
+    void reverse() {
+        std::reverse(v.begin(), v.end());
     }
 };
 

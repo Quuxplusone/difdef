@@ -93,7 +93,7 @@ Diff diff_two_files(const std::vector<const std::string *> &a, const std::vector
         suffix.push_back(DiffLine(line, true, true));
         --ja; --jb;
     }
-    std::reverse(suffix.begin(), suffix.end());
+    suffix.reverse();
     /* Make sure [i,ja) and [i,jb) are real ranges. */
     assert(0 <= i && i <= ja && ja <= a.size());
     assert(0 <= i && i <= jb && jb <= b.size());
