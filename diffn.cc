@@ -4,8 +4,7 @@
 
 #include "diffn.h"
 
-/* Static member variable */
-int Diff::NUM_FILES = 0;
+int NUM_FILES = 0;
 
 extern std::vector<const std::string *> lcs_unique(
         const std::vector<const std::string *> &a,
@@ -13,31 +12,31 @@ extern std::vector<const std::string *> lcs_unique(
 
 Diff vec_to_diff1(const std::vector<const std::string *> &a)
 {
-    Diff::NUM_FILES = 1;
-    Diff result;
+    Diff result(1);
     const int n = a.size();
     for (int i=0; i < n; ++i) {
-        result.push_back(Diff::Line(a[i], true, true));
+        result.push_back(Diff::Line(1, a[i], true, true));
     }
     return result;
 }
 
 Diff diff_diff_vs_vec(Diff &a, const std::vector<const std::string *> &b)
 {
-    Diff::NUM_FILES = a.dimension() + 1;
-    Diff result, suffix;
+    int NUM_FILES = a.dimension() + 1;
+    Diff result(NUM_FILES);
+    Diff suffix(NUM_FILES);
 
     int i = 0;
     while (i < a.size() && i < b.size() && a[i].text == b[i]) {
         const std::string *line = b[i];
-        result.push_back(Diff::Line(line, a[i], true));
+        result.push_back(Diff::Line(NUM_FILES, line, a[i], true));
         ++i;
     }
     int ja = a.size();
     int jb = b.size();
     while (ja > i && jb > i && a[ja-1].text == b[jb-1]) {
         const std::string *line = b[jb-1];
-        suffix.push_back(Diff::Line(line, a[ja-1], true));
+        suffix.push_back(Diff::Line(NUM_FILES, line, a[ja-1], true));
         --ja; --jb;
     }
     suffix.reverse();
@@ -82,17 +81,16 @@ Diff diff_diff_vs_vec(Diff &a, const std::vector<const std::string *> &b)
     if (uab.empty()) {
         /* Base case: There are no unique shared lines between a and b. */
         for (int k = i; k < ja; ++k) {
-            result.push_back(Diff::Line(a[k].text, a[k], false));
+            result.push_back(Diff::Line(NUM_FILES, a[k].text, a[k], false));
         }
         for (int k = i; k < jb; ++k) {
-            result.push_back(Diff::Line(b[k], false, true));
+            result.push_back(Diff::Line(NUM_FILES, b[k], false, true));
         }
     } else {
         /* Recurse on the interstices. */
         int ak = i;
         int bk = i;
-        Diff::NUM_FILES -= 1;
-        Diff ta;
+        Diff ta(NUM_FILES-1);
         std::vector<const std::string *> tb;
         for (int uabx = 0; uabx < uab.size(); ++uabx) {
             assert(ak < ja);
@@ -106,7 +104,7 @@ Diff diff_diff_vs_vec(Diff &a, const std::vector<const std::string *> &b)
             assert(bk < jb);
             assert(a[ak].text == uab[uabx]);
             assert(b[bk] == uab[uabx]);
-            result.push_back(Diff::Line(uab[uabx], a[ak], true));
+            result.push_back(Diff::Line(NUM_FILES, uab[uabx], a[ak], true));
             ++ak;
             ++bk;
         }
@@ -127,4 +125,14 @@ Diff diff_three_files(const std::vector<const std::string *> &a_,
     Diff a = vec_to_diff1(a_);
     Diff ab = diff_diff_vs_vec(a,b);
     return diff_diff_vs_vec(ab,c);
+}
+
+Diff diff_n_files(const std::vector<const std::vector<const std::string *> *> &v)
+{
+    assert(v.size() > 0);
+    Diff d = vec_to_diff1(*v[0]);
+    for (int i=1; i < v.size(); ++i) {
+        d = diff_diff_vs_vec(d, *v[i]);
+    }
+    return d;
 }

@@ -47,15 +47,19 @@ int main(int argc, char **argv)
         all_files.push_back(f);
     }
 
-    Diff result = diff_three_files(all_files[0].lines, all_files[1].lines, all_files[2].lines);
+    std::vector<const std::vector<const std::string *> *> v;
+    for (int i=0; i < all_files.size(); ++i)
+        v.push_back(&all_files[i].lines);
+
+    Diff result = diff_n_files(v);
 
     /* Print out the diff. */
     const int n = result.size();
     for (int i=0; i < n; ++i) {
         const Diff::Line &line = result[i];
-        putchar(line.in_[0] ? 'a' : ' ');
-        putchar(line.in_[1] ? 'b' : ' ');
-        putchar(line.in_[2] ? 'c' : ' ');
+        for (int j=0; j < line.in_.size(); ++j) {
+            putchar(line.in_[j] ? 'a'+j : ' ');
+        }
         putchar(' ');
         puts(line.text->c_str());
     }
