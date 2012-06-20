@@ -24,8 +24,13 @@ static std::vector<const std::string *> classical_lcs(
         memo[key] = result;
         return result;
     } else if (a[i-1] == b[j-1]) {
-        std::vector<const std::string *> result = classical_lcs(a, b, i-1, j-1, memo);
-        result.push_back(a[i-1]);
+        int oldi = i;
+        while (i > 0 && j > 0 && a[i-1] == b[j-1]) {
+            --i;
+            --j;
+        }
+        std::vector<const std::string *> result = classical_lcs(a, b, i, j, memo);
+        result.insert(result.end(), a.begin() + i, a.begin() + oldi);
         memo[key] = result;
         return result;
     } else {
@@ -58,7 +63,11 @@ void Difdef_impl::add_vec_to_diff_classical(Difdef::Diff &a,
 
     std::vector<const std::string *> ta;
     for (size_t i=0; i < a.lines.size(); ++i) {
-        ta.push_back(a.lines[i].text);
+        const std::string *line = a.lines[i].text;
+        /* Lines in A which do not appear in B can't be part of the LCS. */
+        const Difdef_StringSet::Data &data = this->unique_lines.lookup(line);
+        if (data.in[fileid] > 0)
+            ta.push_back(line);
     }
 
     Memo memo;
