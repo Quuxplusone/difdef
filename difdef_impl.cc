@@ -170,6 +170,7 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
     assert(0 <= fileid && fileid < a.dimension && a.dimension <= Difdef::MAX_FILES);
 
     const mask_t bmask = (1u << fileid);
+    assert((a.mask & bmask) == 0);
     Difdef::Diff result(a.dimension, a.mask | bmask);
     Difdef::Diff suffix(a.dimension, a.mask | bmask);
 
@@ -233,7 +234,7 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
     if (lcs.empty()) {
         /* Base case: There are no unique shared lines between a and b.
          * In this case we want to fall back on the classical algorithm. */
-        Diff ta(a.dimension, a.mask);
+        Diff ta(a.dimension, a.mask | bmask);
         std::vector<const std::string *> tb(b.begin() + i, b.begin() + jb);
         for (size_t k = i; k < ja; ++k) {
             ta.lines.push_back(Difdef::Diff::Line(a.lines[k].text, a.lines[k].mask));

@@ -1,0 +1,71 @@
+This is "Difdef", a program that performs a multi-way diff among
+a set of source files.  Difdef is released under the MIT (Expat)
+license; see LICENSE for details.
+
+
+==Command-line use==
+
+To build Difdef, run "make". This will produce an executable called
+"diffn", with the following behavior:
+
+    ./diffn [--ifdefs] file1 [file2 file3 ...]
+
+Invoked without the --ifdefs option, "diffn" produces output similar
+to the standard "diff" program: a merged version of the given files,
+with a prefix on each line indicating which files contain that line.
+Where "diff" uses a one-character prefix from the set [+- ], "diffn"
+uses an N-character prefix: "a" in the first column means the line
+is present in file1, "b" in the second column means the line is
+present in file2, and so on.
+
+Invoked with the --ifdefs option, "diffn" produces a merged version
+of the given files where each difference is surrounded by #ifdefs
+of the form
+    #if defined(V1) || defined(V4) || defined(V5)
+    <differing text>
+    #endif /* V1 || V4 || V5 */
+In other words, the output of "diffn A B" is similar to the output
+of "diff -DV2 A B". However, blank lines are treated specially;
+they can be coalesced and/or moved outside an #ifdef range. Also,
+"diffn A B C D E" produces readable output similar to the above
+example, where iterated application of "diff -D" would produce an
+unintelligible stew.
+
+
+==Hacking==
+
+Internally, the code aims for reusability. To create a merge,
+your code should #include "difdef.h". The class Difdef manages
+all the resources associated with a single N-way merge; the
+Difdef constructor requires that you specify N.
+
+Once you have a Difdef object, you can populate it by calling
+mydifdef.replace_file(i, <file>) for 0 <= i < N. Then call
+mydifdef.merge(), which returns a Diff object. The Diff object
+(which perhaps would have been better called a Merge object)
+is just a wrapper around a vector of Lines, where each Line
+knows which of the N files it comes from and what its text is.
+
+The full "public interface" for Difdef looks like this:
+
+        class Difdef {
+            static const int MAX_FILES = 32;
+            typedef unsigned int mask_t;
+            class Diff {
+                class Line {
+                    const std::string *text;
+                    mask_t mask;
+                    bool in_file(int fileid) const;
+                };
+                const int dimension;
+                mask_t all_files_mask() const;
+                bool includes_file(int fileid) const;
+            };
+            Difdef(int num_files);
+            void replace_file(int fileid, std::istream &);
+            Diff merge() const;
+            Diff merge(int, int) const;
+            Diff merge(const std::set<int> &) const;
+            const int NUM_FILES;
+        };
+
