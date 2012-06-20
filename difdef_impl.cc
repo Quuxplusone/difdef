@@ -16,9 +16,10 @@
 /** Difdef::Diff public class functions **********************************/
 
 
-Difdef::Diff::Diff(int num_files): dimension(num_files), mask(0)
+Difdef::Diff::Diff(int num_files, mask_t mask): dimension(num_files), mask(mask)
 {
     assert(0 < num_files && num_files <= Difdef::MAX_FILES);
+    assert(mask < ((mask_t)1 << num_files));
 }
 
 Difdef::Diff &Difdef::Diff::operator = (const Difdef::Diff &rhs)
@@ -39,20 +40,25 @@ void Difdef::Diff::append(const Difdef::Diff &rhs)
 bool Difdef::Diff::includes_file(int fileid) const
 {
     assert(0 <= fileid && fileid < this->dimension && this->dimension <= Difdef::MAX_FILES);
-    return (this->mask & (1u << fileid)) != 0;
+    return (this->mask & ((mask_t)1 << fileid)) != 0;
+}
+
+Difdef::mask_t Difdef::Diff::all_files_mask() const
+{
+    return this->mask;
 }
 
 
-Difdef::Diff::Line::Line(const std::string *text, unsigned int mask): text(text), mask(mask)
+Difdef::Diff::Line::Line(const std::string *text, mask_t mask): text(text), mask(mask)
 {
     assert(text != NULL);
-    assert(mask != 0u);
+    assert(mask != 0);
 }
 
 bool Difdef::Diff::Line::in_file(int fileid) const
 {
     assert(0 <= fileid && fileid < Difdef::MAX_FILES);
-    return (this->mask & (1u << fileid)) != 0;
+    return (this->mask & ((mask_t)1 << fileid)) != 0;
 }
 
 /** DifDef public class wrapper functions ********************************/
@@ -78,7 +84,7 @@ void Difdef::replace_file(int fileid, std::istream &in)
 Difdef::Diff Difdef::merge() const
 {
     assert(0 < this->NUM_FILES && this->NUM_FILES < Difdef::MAX_FILES);
-    unsigned int m = (1u << this->NUM_FILES) - 1u;
+    mask_t m = ((mask_t)1 << this->NUM_FILES) - (mask_t)1;
     return this->impl->merge(m);
 }
 
@@ -87,17 +93,17 @@ Difdef::Diff Difdef::merge(int fileid1, int fileid2) const
     assert(0 < this->NUM_FILES && this->NUM_FILES < Difdef::MAX_FILES);
     assert(0 <= fileid1 && fileid1 < this->NUM_FILES);
     assert(0 <= fileid2 && fileid2 < this->NUM_FILES);
-    unsigned int m = (1u << fileid1) | (1u << fileid2);
+    mask_t m = ((mask_t)1 << fileid1) | ((mask_t)1 << fileid2);
     return this->impl->merge(m);
 }
 
 Difdef::Diff Difdef::merge(const std::set<int> &fileids) const
 {
     assert(0 < this->NUM_FILES && this->NUM_FILES < Difdef::MAX_FILES);
-    unsigned int m = 0u;
+    mask_t m = 0;
     for (std::set<int>::const_iterator it = fileids.begin(); it != fileids.end(); ++it) {
         assert(0 <= *it && *it < this->NUM_FILES);
-        m |= (1u << *it);
+        m |= ((mask_t)1 << *it);
     }
     return this->impl->merge(m);
 }
@@ -124,7 +130,7 @@ Difdef::Diff Difdef_impl::merge(unsigned int fmask) const
     assert(fmask != 0u);
     assert(fmask < (1u << this->NUM_FILES));
 
-    Diff d(this->NUM_FILES);
+    Diff d(this->NUM_FILES, 0);
     for (size_t i=0; i < this->lines.size(); ++i) {
         this->add_vec_to_diff(d, i, this->lines[i]);
     }
@@ -136,9 +142,9 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
     assert(this->NUM_FILES == a.dimension);
     assert(0 <= fileid && fileid < a.dimension && a.dimension <= Difdef::MAX_FILES);
 
-    const unsigned int bmask = (1u << fileid);
-    Difdef::Diff result(a.dimension);
-    Difdef::Diff suffix(a.dimension);
+    const mask_t bmask = (1u << fileid);
+    Difdef::Diff result(a.dimension, a.mask | bmask);
+    Difdef::Diff suffix(a.dimension, a.mask | bmask);
 
     /* Record the common prefix. */
     size_t i = 0;
@@ -208,7 +214,7 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
         /* Recurse on the interstices. */
         size_t ak = i;
         size_t bk = i;
-        Diff ta(a.dimension);
+        Diff ta(a.dimension, a.mask);
         std::vector<const std::string *> tb;
         for (size_t uabx = 0; uabx < uab.size(); ++uabx) {
             assert(ak < ja);

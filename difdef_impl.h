@@ -44,12 +44,13 @@ struct Difdef_impl {
     Difdef_StringSet unique_lines;
     std::vector<std::vector<const std::string *> > lines;
     typedef Difdef::Diff Diff;
+    typedef Difdef::mask_t mask_t;
   
     Difdef_impl(int num_files): NUM_FILES(num_files), unique_lines(num_files), lines(num_files) { }
 
     void replace_file(int fileid, std::istream &in);
 
-    Diff merge(unsigned int fileids_mask) const;  // merge a non-empty set of files
+    Diff merge(mask_t fileids_mask) const;  // merge a non-empty set of files
 
     void add_vec_to_diff(Diff &a, int fileid, const std::vector<const std::string *> &b) const;
 };
