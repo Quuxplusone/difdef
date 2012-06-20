@@ -13,6 +13,12 @@
 #include "patience.cc"
 
 
+/** Classical (dynamic programming) diff implementation ******************/
+
+
+#include "classical.cc"
+
+
 /** Difdef::Diff public class functions **********************************/
 
 
@@ -165,6 +171,7 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
     std::reverse(suffix.lines.begin(), suffix.lines.end());
     assert(i <= ja && ja <= a.lines.size());
     assert(i <= jb && jb <= b.size());
+
     /* Now extract all the lines which appear exactly once in "a" AND once in "b".
      * However, this is not guaranteed to be a common subsequence. */
     std::vector<const std::string *> ua;
@@ -200,36 +207,38 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
     }
 
     /* Run patience diff on these unique lines. */
-    std::vector<const std::string *> uab = patience_unique_lcs(ua, ub);
+    std::vector<const std::string *> lcs = patience_unique_lcs(ua, ub);
 
-    if (uab.empty()) {
-        /* Base case: There are no unique shared lines between a and b. */
+    if (lcs.empty()) {
+        /* Base case: There are no unique shared lines between a and b.
+         * In this case we want to fall back on the classical algorithm. */
+        Diff ta(a.dimension, a.mask);
+        std::vector<const std::string *> tb(b.begin() + i, b.begin() + jb);
         for (size_t k = i; k < ja; ++k) {
-            result.lines.push_back(Difdef::Diff::Line(a.lines[k].text, a.lines[k].mask));
+            ta.lines.push_back(Difdef::Diff::Line(a.lines[k].text, a.lines[k].mask));
         }
-        for (size_t k = i; k < jb; ++k) {
-            result.lines.push_back(Difdef::Diff::Line(b[k], bmask));
-        }
+        this->add_vec_to_diff_classical(ta, fileid, tb);
+        result.append(ta);
     } else {
         /* Recurse on the interstices. */
         size_t ak = i;
         size_t bk = i;
         Diff ta(a.dimension, a.mask);
         std::vector<const std::string *> tb;
-        for (size_t uabx = 0; uabx < uab.size(); ++uabx) {
+        for (size_t lcx = 0; lcx < lcs.size(); ++lcx) {
             assert(ak < ja);
             assert(bk < jb);
-            while (a.lines[ak].text != uab[uabx]) { ta.lines.push_back(a.lines[ak]); ++ak; assert(ak < ja); }
-            while (b[bk] != uab[uabx]) { tb.push_back(b[bk]); ++bk; assert(bk < jb); }
+            while (a.lines[ak].text != lcs[lcx]) { ta.lines.push_back(a.lines[ak]); ++ak; assert(ak < ja); }
+            while (b[bk] != lcs[lcx]) { tb.push_back(b[bk]); ++bk; assert(bk < jb); }
             this->add_vec_to_diff(ta, fileid, tb);
             result.append(ta);
             ta.lines.clear();
             tb.clear();
             assert(ak < ja);
             assert(bk < jb);
-            assert(a.lines[ak].text == uab[uabx]);
-            assert(b[bk] == uab[uabx]);
-            result.lines.push_back(Difdef::Diff::Line(uab[uabx], a.lines[ak].mask | bmask));
+            assert(a.lines[ak].text == lcs[lcx]);
+            assert(b[bk] == lcs[lcx]);
+            result.lines.push_back(Difdef::Diff::Line(lcs[lcx], a.lines[ak].mask | bmask));
             ++ak;
             ++bk;
         }

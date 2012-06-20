@@ -6,7 +6,7 @@ all: diffn
 diffn: diffn_main.o difdef_impl.o
 	$(CXX) $(CFLAGS) $^ -o $@
 
-difdef_impl.o: difdef_impl.cc patience.cc
+difdef_impl.o: difdef_impl.cc patience.cc classical.cc
 	$(CXX) $(CFLAGS) -c difdef_impl.cc -o $@
 
 diffn_main.o: diffn_main.cc

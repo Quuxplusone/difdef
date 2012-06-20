@@ -53,4 +53,5 @@ struct Difdef_impl {
     Diff merge(mask_t fileids_mask) const;  // merge a non-empty set of files
 
     void add_vec_to_diff(Diff &a, int fileid, const std::vector<const std::string *> &b) const;
+    void add_vec_to_diff_classical(Diff &a, int fileid, const std::vector<const std::string *> &b) const;
 };
