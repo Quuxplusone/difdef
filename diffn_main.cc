@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <string>
@@ -31,6 +32,8 @@
 
 typedef Difdef::mask_t mask_t;
 
+static std::vector<std::string> g_MacroNames;
+
 static void emit_ifdef(mask_t mask)
 {
     assert(mask != 0u);
@@ -39,7 +42,7 @@ static void emit_ifdef(mask_t mask)
     for (int i = 0; i < Difdef::MAX_FILES; ++i) {
         if (mask & ((mask_t)1 << i)) {
             if (!first) printf(" || ");
-            printf("defined(V%d)", i+1);
+            printf("defined(%s)", g_MacroNames[i].c_str());
             first = false;
         }
     }
@@ -55,7 +58,7 @@ static void emit_endif(mask_t mask)
     for (int i = 0; i < 31; ++i) {
         if (mask & ((mask_t)1 << i)) {
             if (!first) printf(" || ");
-            printf("V%d", i+1);
+            printf("%s", g_MacroNames[i].c_str());
             first = false;
         }
     }
@@ -146,6 +149,7 @@ static void do_print_using_ifdefs(const Difdef::Diff &diff)
 int main(int argc, char **argv)
 {
     bool print_using_ifdefs = false;
+    std::vector<std::string> user_defined_macro_names;
 
     int i;
     for (i = 1; i < argc; ++i) {
@@ -153,13 +157,37 @@ int main(int argc, char **argv)
         if (!strcmp(argv[i], "--")) { ++i; break; }
         if (!strcmp(argv[i], "--ifdefs")) {
             print_using_ifdefs = true;
+        } else if (argv[i][1] == 'D' && argv[i][2] != '\0') {
+            user_defined_macro_names.push_back(argv[i]+2);
+            print_using_ifdefs = true;
         } else {
             printf("ERROR: unrecognized option %s\n", argv[i]);
-            return 0;
+            exit(EXIT_FAILURE);
         }
     }
+    
+    const int num_files = argc - i;
+    const int num_user_defined_macros = user_defined_macro_names.size();
+    
+    if (num_user_defined_macros == 0) {
+        char buffer[8];
+        for (int j=0; j < num_files; ++j) {
+            sprintf(buffer, "V%d", j+1);
+            g_MacroNames.push_back(buffer);
+        }
+    } else if (num_user_defined_macros == num_files) {
+        g_MacroNames = user_defined_macro_names;
+    } else if (num_user_defined_macros > num_files) {
+        printf("ERROR: %d macro name(s) were provided via -D options, but only %d file(s)!",
+               num_user_defined_macros, num_files);
+        exit(EXIT_FAILURE);
+    } else {
+        printf("ERROR: %d file(s) were provided, but only %d -D option(s)!",
+               num_files, num_user_defined_macros);
+        exit(EXIT_FAILURE);
+    }
 
-    Difdef difdef(argc-i);
+    Difdef difdef(num_files);
     for (int a = i; a < argc; ++a) {
         std::ifstream f(argv[a]);
         difdef.replace_file(a-i, f);
