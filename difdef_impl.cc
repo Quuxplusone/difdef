@@ -181,18 +181,9 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
         result.lines.push_back(Difdef::Diff::Line(line, a.lines[i].mask | bmask));
         ++i;
     }
-    
-    /* Record the common suffix. */
-    size_t ja = a.lines.size();
-    size_t jb = b.size();
-    while (ja > i && jb > i && a.lines[ja-1].text == b[jb-1]) {
-        const std::string *line = b[jb-1];
-        suffix.lines.push_back(Difdef::Diff::Line(line, a.lines[ja-1].mask | bmask));
-        --ja; --jb;
-    }
-    std::reverse(suffix.lines.begin(), suffix.lines.end());
-    assert(i <= ja && ja <= a.lines.size());
-    assert(i <= jb && jb <= b.size());
+
+    const size_t ja = a.lines.size();
+    const size_t jb = b.size();
 
     /* Now extract all the lines which appear exactly once in "a" AND once in "b".
      * However, this is not guaranteed to be a common subsequence. */
@@ -272,9 +263,6 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
         result.append(ta);
     }
 
-    /* And finally, append the shared suffix. */
-    result.append(suffix);
-    
     /* Now copy the new result into "a". */
     a = result;
 }

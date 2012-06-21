@@ -77,10 +77,10 @@ void Difdef_impl::add_vec_to_diff_classical(Difdef::Diff &a,
 
     const mask_t bmask = (1u << fileid);
 
-    /* We are guaranteed that the input doesn't have a common prefix or suffix. */
+    /* We are guaranteed that the input doesn't have a common prefix; our caller
+     * should have taken care of that. The input may indeed have a common suffix. */
     if (b.empty()) return;
     assert(a.lines.empty() || a.lines[0].text != b[0]);
-    assert(a.lines.empty() || a.lines.back().text != b.back());
 
     std::vector<const std::string *> ta;
     for (size_t i=0; i < a.lines.size(); ++i) {
