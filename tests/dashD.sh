@@ -19,12 +19,12 @@ bats
 EOF
 diff expected out
 
-./diffn -DRATS a b >/dev/null
+./diffn -DRATS a b >/dev/null 2>&1
 if [ $? == 0 ]; then
   echo "Didn't report failure from too few -D options"
 fi
 
-./diffn -DRATS -DBATS -DCATS a b >/dev/null
+./diffn -DRATS -DBATS -DCATS a b >/dev/null 2>&1
 if [ $? == 0 ]; then
   echo "Didn't report failure from too many -D options"
 fi
