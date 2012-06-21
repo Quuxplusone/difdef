@@ -252,6 +252,7 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
             assert(bk < jb);
             while (a.lines[ak].text != lcs[lcx]) { ta.lines.push_back(a.lines[ak]); ++ak; assert(ak < ja); }
             while (b[bk] != lcs[lcx]) { tb.push_back(b[bk]); ++bk; assert(bk < jb); }
+            ta.mask = a.mask;
             this->add_vec_to_diff(ta, fileid, tb);
             result.append(ta);
             ta.lines.clear();
@@ -266,6 +267,7 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
         }
         while (ak < ja) { ta.lines.push_back(a.lines[ak]); ++ak; }
         while (bk < jb) { tb.push_back(b[bk]); ++bk; }
+        ta.mask = a.mask;
         this->add_vec_to_diff(ta, fileid, tb);
         result.append(ta);
     }
