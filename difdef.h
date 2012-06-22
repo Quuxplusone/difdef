@@ -32,7 +32,7 @@ class Difdef {
     static const int MAX_FILES = 32;  // maximum valid NUM_FILES
 
     const int NUM_FILES;  // set in constructor, read-only
-    
+
     Difdef(int num_files);  // Requires: 0 < num_files <= Difdef::MAX_FILES
     ~Difdef();
     void replace_file(int fileid, std::istream &in);
@@ -66,8 +66,13 @@ class Difdef {
         Diff(int num_files, mask_t mask);  // private constructor means you can't create new ones
         void append(const Diff &);
         mask_t mask;
+        friend class Difdef;
         friend class Difdef_impl;
     };
+
+    // Construct a new Diff that's just these N files in order; don't merge
+    // common lines at all. Caller retains ownership of the strings.
+    static Diff simply_concatenate(const std::vector<std::vector<const std::string *> > &);
 
   private:
     class Difdef_impl *impl;

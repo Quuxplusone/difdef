@@ -266,3 +266,16 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
     /* Now copy the new result into "a". */
     a = result;
 }
+
+Difdef::Diff Difdef::simply_concatenate(const std::vector<std::vector<const std::string *> > &vec)
+{
+    int num_files = vec.size();
+    Diff result(num_files, ((mask_t)1 << num_files) - (mask_t)1);
+    for (int v=0; v < num_files; ++v) {
+        mask_t vmask = (mask_t)1 << v;
+        for (size_t i=0; i < vec[v].size(); ++i) {
+            result.lines.push_back(Difdef::Diff::Line(vec[v][i], vmask));
+        }
+    }
+    return result;
+}

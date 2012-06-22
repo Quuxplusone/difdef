@@ -179,7 +179,6 @@ void verify_properly_nested_directives(const Difdef::Diff &diff, char *fnames[])
 {
     std::vector<std::stack<char> > nest(diff.dimension);
     std::vector<int> lineno(diff.dimension);
-    bool saw_any_directive = false;
 
     for (size_t i=0; i < diff.lines.size(); ++i) {
         for (int v=0; v < diff.dimension; ++v) {
@@ -193,26 +192,25 @@ void verify_properly_nested_directives(const Difdef::Diff &diff, char *fnames[])
         const bool is_anything = is_if || is_elif || is_else || is_endif;
 
         if (is_anything) {
-            saw_any_directive = true;
             for (int v=0; v < diff.dimension; ++v) {
-                if (diff.lines[i].in_file(v)) {
-                    if ((is_elif || is_else || is_endif) && nest[v].empty()) {
-                        do_error("ERROR: file %s, line %d: %s with no preceding #if",
-                                 fnames[v], lineno[v], (is_elif ? "#elif" : is_else ? "#else" : "#endif"));
-                    }
-                    if ((is_elif || is_else) && nest[v].top() == 'e') {
-                        do_error("ERROR: file %s, line %d: unexpected %s following an #else",
-                                 fnames[v], lineno[v], (is_elif ? "#elif" : "#else"));
-                    }
-                    if (is_if) {
-                        nest[v].push('i');
-                    } else if (is_else) {
-                        assert(nest[v].top() == 'i');
-                        nest[v].top() = 'e';
-                    } else if (is_endif) {
-                        assert(!nest[v].empty());
-                        nest[v].pop();
-                    }
+                if (!diff.lines[i].in_file(v))
+                    continue;
+                if ((is_elif || is_else || is_endif) && nest[v].empty()) {
+                    do_error("ERROR: file %s, line %d: %s with no preceding #if",
+                             fnames[v], lineno[v], (is_elif ? "#elif" : is_else ? "#else" : "#endif"));
+                }
+                if ((is_elif || is_else) && nest[v].top() == 'e') {
+                    do_error("ERROR: file %s, line %d: unexpected %s following an #else",
+                             fnames[v], lineno[v], (is_elif ? "#elif" : "#else"));
+                }
+                if (is_if) {
+                    nest[v].push('i');
+                } else if (is_else) {
+                    assert(nest[v].top() == 'i');
+                    nest[v].top() = 'e';
+                } else if (is_endif) {
+                    assert(!nest[v].empty());
+                    nest[v].pop();
                 }
             }
         }
@@ -222,10 +220,86 @@ void verify_properly_nested_directives(const Difdef::Diff &diff, char *fnames[])
             do_error("ERROR: at end of file %s: expected #endif", fnames[v]);
         }
     }
-    if (saw_any_directive) {
-        fprintf(stderr, "WARNING: some input files contain preprocessor directives.\n"
-                "This situation is not yet handled correctly.\n"
-                "I'm producing a merge result anyway...\n");
+}
+
+/* For each #if in the file, look up its associated #elif/#else/#endif chain.
+ * If every directive in the range has exactly the same mask, and every
+ * source line in the range is included in a subset of that mask, then we
+ * don't need to do anything. Otherwise, we'll fall back on the guaranteed
+ * solution: split out N copies of the entire range, one for each version.
+ */
+void split_if_elif_ranges_by_version(Difdef::Diff &diff)
+{
+    for (size_t i=0; i < diff.lines.size(); ++i) {
+        if (!matches_if_directive(*diff.lines[i].text))
+            continue;
+
+        /* We have an #if. See if its range is all under the same mask. */
+        bool need_to_split = false;
+        size_t end_of_range = diff.lines.size();
+        mask_t desired_mask = diff.lines[i].mask;
+        std::vector<std::stack<char> > nest(diff.dimension);
+        for (size_t j = i; j < diff.lines.size(); ++j) {
+            if (diff.lines[j].mask & ~desired_mask) {
+                /* This line's mask is NOT a subset of the desired mask. */
+                need_to_split = true;
+            }
+            const bool is_if = matches_if_directive(*diff.lines[j].text);
+            const bool is_elif = matches_pp_directive(*diff.lines[j].text, "elif");
+            const bool is_else = matches_pp_directive(*diff.lines[j].text, "else");
+            const bool is_endif = matches_pp_directive(*diff.lines[j].text, "endif");
+            const bool is_anything = is_if || is_elif || is_else || is_endif;
+            if (is_anything && (diff.lines[j].mask != desired_mask)) {
+                /* All pp-directives in the range must have the same mask. */
+                need_to_split = true;
+            }
+            if (is_if) {
+                for (int v=0; v < diff.dimension; ++v) {
+                    if (!diff.lines[j].in_file(v)) continue;
+                    nest[v].push('i');
+                }
+            } else if (is_else) {
+                for (int v=0; v < diff.dimension; ++v) {
+                    if (!diff.lines[j].in_file(v)) continue;
+                    assert(nest[v].top() == 'i');
+                    nest[v].top() = 'e';
+                }
+            } else if (is_endif) {
+                bool done = true;
+                for (int v=0; v < diff.dimension; ++v) {
+                    if (!diff.lines[j].in_file(v)) continue;
+                    assert(!nest[v].empty());
+                    nest[v].pop();
+                    if (!nest[v].empty())
+                        done = false;
+                }
+                if (done) {
+                    end_of_range = j+1;
+                    break;
+                }
+            }
+        }
+
+        /* The range must contain at least two lines. */
+        assert(i+1 < end_of_range && end_of_range <= diff.lines.size());
+        assert(matches_if_directive(*diff.lines[i].text));
+        assert(matches_pp_directive(*diff.lines[end_of_range-1].text, "endif"));
+
+        if (need_to_split) {
+            std::vector<std::vector<const std::string *> > split_versions(diff.dimension);
+            for (size_t j = i; j < end_of_range; ++j) {
+                for (int v=0; v < diff.dimension; ++v) {
+                    if (!diff.lines[j].in_file(v)) continue;
+                    split_versions[v].push_back(diff.lines[j].text);
+                }
+            }
+            Difdef::Diff split_merge = Difdef::simply_concatenate(split_versions);
+            diff.lines.erase(diff.lines.begin()+i, diff.lines.begin()+end_of_range);
+            diff.lines.insert(diff.lines.begin()+i, split_merge.lines.begin(), split_merge.lines.end());
+            i += split_merge.lines.size()-1;
+        } else {
+            i = end_of_range-1;
+        }
     }
 }
 
@@ -248,14 +322,14 @@ int main(int argc, char **argv)
             do_error("ERROR: unrecognized option %s", argv[i]);
         }
     }
-    
+
     const int num_files = argc - i;
     const int num_user_defined_macros = user_defined_macro_names.size();
-    
+
     if (num_files == 0) {
         do_error("ERROR: no files provided!");
     }
-    
+
     if (num_user_defined_macros == 0) {
         char buffer[8];
         for (int j=0; j < num_files; ++j) {
@@ -283,6 +357,7 @@ int main(int argc, char **argv)
     /* Print out the diff. */
     if (print_using_ifdefs) {
         verify_properly_nested_directives(diff, argv+i);
+        split_if_elif_ranges_by_version(diff);
         collapse_blank_lines(diff);
         do_print_using_ifdefs(diff);
     } else {
