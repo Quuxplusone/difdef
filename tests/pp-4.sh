@@ -118,3 +118,5 @@ still common  // should be merged
 suffix
 EOF
 diff expected out
+
+rm -f a b expected out

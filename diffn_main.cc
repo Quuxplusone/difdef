@@ -250,8 +250,13 @@ void split_if_elif_ranges_by_version(Difdef::Diff &diff)
             const bool is_endif = matches_pp_directive(*diff.lines[j].text, "endif");
             const bool is_anything = is_if || is_elif || is_else || is_endif;
             if (is_anything && (diff.lines[j].mask != desired_mask)) {
-                /* All pp-directives in the range must have the same mask. */
-                need_to_split = true;
+                /* All top-level pp-directives in the range must have the same mask. */
+                for (int v=0; v < diff.dimension; ++v) {
+                    if (!diff.lines[j].in_file(v)) continue;
+                    if (nest[v].size() == (is_if ? 0 : 1)) {
+                        need_to_split = true;
+                    }
+                }
             }
             if (is_if) {
                 for (int v=0; v < diff.dimension; ++v) {
@@ -265,11 +270,13 @@ void split_if_elif_ranges_by_version(Difdef::Diff &diff)
                     nest[v].top() = 'e';
                 }
             } else if (is_endif) {
-                bool done = true;
                 for (int v=0; v < diff.dimension; ++v) {
                     if (!diff.lines[j].in_file(v)) continue;
                     assert(!nest[v].empty());
                     nest[v].pop();
+                }
+                bool done = true;
+                for (int v=0; v < diff.dimension; ++v) {
                     if (!nest[v].empty())
                         done = false;
                 }
@@ -297,8 +304,6 @@ void split_if_elif_ranges_by_version(Difdef::Diff &diff)
             diff.lines.erase(diff.lines.begin()+i, diff.lines.begin()+end_of_range);
             diff.lines.insert(diff.lines.begin()+i, split_merge.lines.begin(), split_merge.lines.end());
             i += split_merge.lines.size()-1;
-        } else {
-            i = end_of_range-1;
         }
     }
 }
