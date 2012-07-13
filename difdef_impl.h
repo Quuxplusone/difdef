@@ -65,7 +65,7 @@ struct Difdef_impl {
     std::vector<std::vector<const std::string *> > lines;
     typedef Difdef::Diff Diff;
     typedef Difdef::mask_t mask_t;
-  
+
     Difdef_impl(int num_files): NUM_FILES(num_files), unique_lines(num_files), lines(num_files) { }
 
     void replace_file(int fileid, std::istream &in);

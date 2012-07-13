@@ -8,9 +8,9 @@ license; see LICENSE for details.
 To build Difdef, run "make". This will produce an executable called
 "diffn", with the following behavior:
 
-    ./diffn [--ifdefs] file1 [file2 file3 ...]
+    diffn [-D FOO ...] file1 [file2 file3 ...]
 
-Invoked without the --ifdefs option, "diffn" produces output similar
+Invoked without any -D options, "diffn" produces output similar
 to the standard "diff" program: a merged version of the given files,
 with a prefix on each line indicating which files contain that line.
 Where "diff" uses a one-character prefix from the set [+- ], "diffn"
@@ -18,19 +18,22 @@ uses an N-character prefix: "a" in the first column means the line
 is present in file1, "b" in the second column means the line is
 present in file2, and so on.
 
-Invoked with the --ifdefs option, "diffn" produces a merged version
-of the given files where each difference is surrounded by #ifdefs
-of the form
+Invoked with -D options (of which there must be exactly as many
+as there are filenames on the command line), "diffn" produces a
+merged version of the given files where each difference is
+surrounded by #ifdefs of the form
     #if defined(V1) || defined(V4) || defined(V5)
     <differing text>
     #endif /* V1 || V4 || V5 */
-In other words, the output of "diffn A B" is similar to the output
-of "diff -DV2 A B". However, blank lines are treated specially;
-they can be coalesced and/or moved outside an #ifdef range. Also,
-"diffn A B C D E" produces readable output similar to the above
-example, where iterated application of "diff -D" would produce an
-unintelligible stew.
+In other words, the output of "diffn -DV1 -DV2 A B" is similar to
+the output of "diff -DV2 A B". However, blank lines are treated
+specially; they can be coalesced and/or moved outside an #ifdef
+range. Also, "diffn A B C D E" produces readable output similar
+to the above example, where iterated application of "diff -D"
+would produce an unintelligible stew.
 
+Invoked with the -u option, "diffn" behaves as a drop-in replacement
+for "diff -u", mostly just to prove that I could do it.
 
 ==Hacking==
 

@@ -51,7 +51,7 @@ ab
 EOF
 diff expected out
 
-./diffn --ifdefs a b >out
+./diffn -DV1 -DV2 a b >out
 cat >expected <<EOF
 #include <stdio.h>
 #include <stdlib.h>

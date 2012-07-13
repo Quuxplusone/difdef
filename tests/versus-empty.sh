@@ -21,7 +21,7 @@ cat >expected <<EOF
 EOF
 diff expected out
 
-./diffn --ifdefs a b >out
+./diffn -DV1 -DV2 a b >out
 cat >expected <<EOF
 #if defined(V1)
 foo
@@ -31,7 +31,7 @@ baz
 EOF
 diff expected out
 
-./diffn --ifdefs b a >out
+./diffn -DV1 -DV2 b a >out
 cat >expected <<EOF
 #if defined(V2)
 foo

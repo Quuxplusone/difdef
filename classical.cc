@@ -118,7 +118,7 @@ void Difdef_impl::add_vec_to_diff_classical(Difdef::Diff &a,
         result.lines.push_back(Difdef::Diff::Line(a.lines[ak].text, a.lines[ak].mask));
     for ( ; bk < b.size(); ++bk)
         result.lines.push_back(Difdef::Diff::Line(b[bk], bmask));
-    
+
     /* Now copy the new result into "a". */
     a = result;
 }

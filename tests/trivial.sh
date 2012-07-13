@@ -13,7 +13,7 @@ abbaz
 EOF
 diff expected out
 
-./diffn --ifdefs a b >out
+./diffn -DV1 -DV2 a b >out
 diff a out
 
 rm -f a b expected out

@@ -20,8 +20,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <algorithm>
 #include <cassert>
 #include <cstdarg>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -35,6 +37,9 @@
 typedef Difdef::mask_t mask_t;
 
 static std::vector<std::string> g_MacroNames;
+static bool g_PrintUsingIfdefs = false;
+static bool g_PrintUnifiedDiff = false;
+static size_t g_LinesOfContext = 3;
 
 static void do_error(const char *fmt, ...)
 {
@@ -44,6 +49,28 @@ static void do_error(const char *fmt, ...)
     putc('\n', stderr);
     va_end(ap);
     exit(EXIT_FAILURE);
+}
+
+static void do_help()
+{
+    puts("Usage: diffn [OPTION]... FILE1 [FILE2 FILE3]...");
+    puts("Compare or merge multiple files.");
+    puts("");
+    puts("  -u  -U NUM  --unified[=NUM]  Output NUM (default 3) lines of unified context.");
+    puts("  -D NAME                      Output a single merged file using #if syntax.");
+    puts("");
+    puts("  --help  Output this help.");
+    puts("");
+    puts("In unified mode, you must supply exactly two files to diff. This mode is");
+    puts("intended to be compatible with GNU diff/patch.");
+    printf("In \"ifdef\" mode, you may supply 1 <= N <= %d files to merge. The number\n",
+        (int)Difdef::MAX_FILES);
+    puts("of files must be equal to the number of -D options.");
+    printf("In \"raw\" mode (the default), you may supply 1 <= N <= %d files to merge.\n",
+        (int)Difdef::MAX_FILES);
+    puts("Each line of output will be prefixed by N characters indicating which files");
+    puts("contain that line.");
+    exit(EXIT_SUCCESS);
 }
 
 static void emit_ifdef(mask_t mask)
@@ -309,20 +336,138 @@ void split_if_elif_ranges_by_version(Difdef::Diff &diff)
 }
 
 
+void do_print_unified_diff(const Difdef::Diff &diff, char *fnames[])
+{
+    assert(fnames[0] != NULL);
+    assert(fnames[1] != NULL);
+
+    /* For now we're just faking the diff format's timestamps. */
+    char timestamp[64];
+    const time_t current_time = time(NULL);
+    struct tm const *tm = localtime(&current_time);
+    strftime(timestamp, sizeof timestamp, "%Y-%m-%d %H:%M:%S.000000000 %z", tm);
+    printf("--- %s\t%s\n", fnames[0], timestamp);
+    printf("+++ %s\t%s\n", fnames[1], timestamp);
+
+    size_t abx = 0, ax = 0, bx = 0;
+    size_t n = diff.lines.size();
+    
+  repeat:
+
+    /* Find the first differing line. */
+    while (abx < n) {
+        if (diff.lines[abx].in_file(0) != diff.lines[abx].in_file(1))
+            break;
+        ++ax;
+        ++bx;
+        ++abx;
+    }
+    
+    if (abx == n) return;
+    
+    assert(diff.lines[abx].in_file(0) != diff.lines[abx].in_file(1));
+    assert(ax <= abx && bx <= abx);
+    const size_t first_diff_in_ab = abx;
+    const size_t first_diff_in_a = ax;
+    const size_t first_diff_in_b = bx;
+    
+    /* Find the last differing line in this hunk. We can subsume
+     * non-differing ranges of up to 2*g_LinesOfContext lines. */
+    size_t non_differing_range = 0;
+    while (abx < n) {
+        if (diff.lines[abx].in_file(0) == diff.lines[abx].in_file(1)) {
+            if (non_differing_range == 2*g_LinesOfContext) {
+                break;
+            }
+            non_differing_range += 1;
+        } else {
+            non_differing_range = 0;
+        }
+        ax += diff.lines[abx].in_file(0);
+        bx += diff.lines[abx].in_file(1);
+        ++abx;
+    }
+    
+    assert(abx <= n);
+    assert(ax <= abx && bx <= abx);
+    
+    const size_t last_diff_in_ab = (abx - non_differing_range);
+    const size_t last_diff_in_a = (ax - non_differing_range);
+    const size_t last_diff_in_b = (bx - non_differing_range);
+    
+    const size_t leading_context = std::min(first_diff_in_ab, g_LinesOfContext);
+    const size_t trailing_context = std::min(n - last_diff_in_ab, g_LinesOfContext);
+
+    const size_t hunk_size_in_a =
+        leading_context + (last_diff_in_a - first_diff_in_a) + trailing_context;
+    const size_t hunk_size_in_b =
+        leading_context + (last_diff_in_b - first_diff_in_b) + trailing_context;
+
+#if 0
+    printf("----- %zu %zu %zu  %zu %zu  %zu %zu\n",
+           last_diff_in_ab, last_diff_in_a, last_diff_in_b, leading_context, trailing_context, hunk_size_in_a, hunk_size_in_b);
+#endif
+    /* Print the line numbers of the hunk. */
+    printf("@@ -%d", (int)(first_diff_in_a - leading_context) + (hunk_size_in_a != 0));
+    if (hunk_size_in_a != 1) printf(",%d", (int)hunk_size_in_a);
+    printf(" +%d", (int)(first_diff_in_b - leading_context) + (hunk_size_in_b != 0));
+    if (hunk_size_in_b != 1) printf(",%d", (int)hunk_size_in_b);
+    printf(" @@\n");
+    
+    /* Now print all the lines in the hunk between "start" and "end". */
+    for (size_t j = first_diff_in_ab - leading_context;
+                j < last_diff_in_ab + trailing_context; ++j) {
+        if (diff.lines[j].in_file(0) && diff.lines[j].in_file(1)) {
+            putchar(' ');
+        } else if (diff.lines[j].in_file(0)) {
+            putchar('-');
+        } else {
+            assert(diff.lines[j].in_file(1));
+            putchar('+');
+        }
+        puts(diff.lines[j].text->c_str());
+    }
+
+    /* Any lines we skipped over are either part of the current hunk, or
+     * present in both versions (i.e., skipped as part of non_differing_range).
+     * Therefore we don't need to "rewind" {abx, ax, bx} at all. */
+    goto repeat;
+}
+
+
 int main(int argc, char **argv)
 {
-    bool print_using_ifdefs = false;
     std::vector<std::string> user_defined_macro_names;
 
     int i;
     for (i = 1; i < argc; ++i) {
         if (argv[i][0] != '-') break;
+        if (!strcmp(argv[i], "-")) {
+            do_error("ERROR: reading from standard input is not supported");
+        }
         if (!strcmp(argv[i], "--")) { ++i; break; }
-        if (!strcmp(argv[i], "--ifdefs")) {
-            print_using_ifdefs = true;
-        } else if (argv[i][1] == 'D' && argv[i][2] != '\0') {
-            user_defined_macro_names.push_back(argv[i]+2);
-            print_using_ifdefs = true;
+        if (!strcmp(argv[i], "--help")) {
+            do_help();
+        } else if (argv[i][1] == 'D') {
+            const char *arg = (argv[i][2]=='\0' ? argv[++i] : argv[i]+2);
+            g_PrintUsingIfdefs = true;
+            if (arg == NULL) {
+                do_error("ERROR: option -D requires an argument");
+            }
+            user_defined_macro_names.push_back(arg);
+        } else if (!strcmp(argv[i], "--unified") || !strcmp(argv[i], "-u")) {
+            g_PrintUnifiedDiff = true;
+        } else if (argv[i][1] == 'U') {
+            const char *arg = (argv[i][2]=='\0' ? argv[++i] : argv[i]+2);
+            char *end;
+            g_PrintUnifiedDiff = true;
+            if (arg == NULL) {
+                do_error("ERROR: option -U requires an argument");
+            }
+            g_LinesOfContext = strtoul(arg, &end, 10);
+            if (end == arg || *end != '\0') {
+                do_error("ERROR: invalid context length '%s'", arg);
+            }
         } else {
             do_error("ERROR: unrecognized option %s", argv[i]);
         }
@@ -331,10 +476,18 @@ int main(int argc, char **argv)
     const int num_files = argc - i;
     const int num_user_defined_macros = user_defined_macro_names.size();
 
-    if (num_files == 0) {
-        do_error("ERROR: no files provided!");
+    if (g_PrintUnifiedDiff && g_PrintUsingIfdefs) {
+        do_error("ERROR: options --unified/-u/-U and --ifdef/-D are mutually exclusive");
     }
 
+    if (num_files == 0) {
+        do_error("ERROR: no files provided");
+    }
+    
+    if (g_PrintUnifiedDiff && num_files != 2) {
+        do_error("ERROR: unified diff requires exactly two files");
+    }
+    
     if (num_user_defined_macros == 0) {
         char buffer[8];
         for (int j=0; j < num_files; ++j) {
@@ -344,10 +497,10 @@ int main(int argc, char **argv)
     } else if (num_user_defined_macros == num_files) {
         g_MacroNames = user_defined_macro_names;
     } else if (num_user_defined_macros > num_files) {
-        do_error("ERROR: %d macro name(s) were provided via -D options, but only %d file(s)!",
+        do_error("ERROR: %d macro name(s) were provided via -D options, but only %d file(s)",
                  num_user_defined_macros, num_files);
     } else {
-        do_error("ERROR: %d file(s) were provided, but only %d -D option(s)!",
+        do_error("ERROR: %d file(s) were provided, but only %d -D option(s)",
                  num_files, num_user_defined_macros);
     }
 
@@ -360,12 +513,22 @@ int main(int argc, char **argv)
     Difdef::Diff diff = difdef.merge();
 
     /* Print out the diff. */
-    if (print_using_ifdefs) {
+    if (g_PrintUnifiedDiff) {
+        do_print_unified_diff(diff, argv+i);
+    } else if (g_PrintUsingIfdefs) {
         verify_properly_nested_directives(diff, argv+i);
         split_if_elif_ranges_by_version(diff);
         collapse_blank_lines(diff);
         do_print_using_ifdefs(diff);
     } else {
+        /* The default output is a multicolumn format:
+         *     a  This line appears only in the first file.
+         *     a cThis line appears in files 1 and 3.
+         *     abcThis line appears in all three files.
+         *      bcThis line appears in files 2 and 3.
+         * and so on. This is not very readable, but it is
+         * eminently greppable.
+         */
         for (size_t i=0; i < diff.lines.size(); ++i) {
             const Difdef::Diff::Line &line = diff.lines[i];
             for (int j=0; j < difdef.NUM_FILES; ++j) {

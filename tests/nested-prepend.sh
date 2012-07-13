@@ -17,7 +17,7 @@ void foo() {
 }
 EOF
 
-./diffn --ifdefs a b c >out
+./diffn -DV1 -DV2 -DV3 a b c >out
 cat >expected <<EOF
 void foo() {
 #if defined(V3)
