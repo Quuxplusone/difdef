@@ -27,7 +27,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <string>
 #include <vector>
 
@@ -102,6 +101,7 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out)
 int main(int argc, char **argv)
 {
     std::vector<std::string> user_defined_macro_names;
+    const char *output_filename = NULL;
 
     static const struct option longopts[] = {
         { "ifdef", required_argument, NULL, 'D' },
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
     int longopt_index;
     bool preceded_by_digit = false;
     size_t ocontext = -1;
-    while ((c = getopt_long(argc, argv, "0123456789D:uU:", longopts, &longopt_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "0123456789D:o:uU:", longopts, &longopt_index)) != -1) {
         switch (c) {
             case 0:
                 if (!strcmp(longopts[longopt_index].name, "help")) {
@@ -134,8 +134,14 @@ int main(int argc, char **argv)
                 break;
             case 'D':
                 g_PrintUsingIfdefs = true;
+                assert(optarg != NULL);
                 user_defined_macro_names.push_back(optarg);
                 break;
+            case 'o': {
+                assert(optarg != NULL);
+                output_filename = optarg;
+                break;
+            }
             case 'U':
             case 'u':
                 g_PrintUnifiedDiff = true;
@@ -153,11 +159,11 @@ int main(int argc, char **argv)
         }
         preceded_by_digit = isdigit(c);
     }
-    
+
     if (ocontext != (size_t)-1) {
         g_LinesOfContext = ocontext;
     }
-    
+
     assert(optind <= argc);
     const int num_files = argc - optind;
     const int num_user_defined_macros = user_defined_macro_names.size();
@@ -169,11 +175,11 @@ int main(int argc, char **argv)
     if (num_files == 0) {
         do_error("no files provided");
     }
-    
+
     if (g_PrintUnifiedDiff && num_files != 2) {
         do_error("unified diff requires exactly two files");
     }
-    
+
     if (g_PrintUsingIfdefs) {
         assert(num_user_defined_macros >= 1);
         if (num_user_defined_macros == num_files) {
@@ -196,23 +202,39 @@ int main(int argc, char **argv)
             difdef.replace_file(i, stdin);
             fstat(fileno(stdin), &files[i].stat);
         } else {
-            FILE *fp = fopen(files[i].name.c_str(), "r");
-            fstat(fileno(fp), &files[i].stat);
-            difdef.replace_file(i, fp);
-            fclose(fp);
+            FILE *in = fopen(files[i].name.c_str(), "r");
+            if (in == NULL) {
+                do_error("Input file '%s': No such file or directory");
+            }
+            fstat(fileno(in), &files[i].stat);
+            difdef.replace_file(i, in);
+            fclose(in);
         }
     }
 
     Difdef::Diff diff = difdef.merge();
 
+    /* Try to open the output file. */
+    FILE *out = stdout;
+    if (output_filename != NULL) {
+        if (!strcmp(output_filename, "-")) {
+            /* Explicitly write to stdout. */
+        } else {
+            out = fopen(output_filename, "w");
+            if (out == NULL) {
+                do_error("Output file '%s': No such file or directory");
+            }
+        }
+    }
+
     /* Print out the diff. */
     if (g_PrintUnifiedDiff) {
-        do_print_unified_diff(diff, &files[0], g_LinesOfContext, stdout);
+        do_print_unified_diff(diff, &files[0], g_LinesOfContext, out);
     } else if (g_PrintUsingIfdefs) {
         verify_properly_nested_directives(diff, &files[0]);
-        do_print_using_ifdefs(diff, stdout);
+        do_print_using_ifdefs(diff, out);
     } else {
-        do_print_multicolumn(diff, stdout);
+        do_print_multicolumn(diff, out);
     }
 
     return 0;
