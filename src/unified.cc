@@ -1,3 +1,24 @@
+/*
+ * Copyright (C) 2012 Arthur O'Dwyer
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
 
 #include <cassert>
 #include <cstddef>
@@ -7,15 +28,18 @@
 #include "diffn.h"
 
 
-void do_print_unified_diff(const Difdef::Diff &diff, const FileInfo files[], size_t lines_of_context)
+void do_print_unified_diff(const Difdef::Diff &diff,
+                           const FileInfo files[],
+                           size_t lines_of_context,
+                           FILE *out)
 {
     char timestamp[64];
     strftime(timestamp, sizeof timestamp, "%Y-%m-%d %H:%M:%S.000000000 %z",
              localtime(&files[0].stat.st_mtime));
-    printf("--- %s\t%s\n", files[0].name.c_str(), timestamp);
+    fprintf(out, "--- %s\t%s\n", files[0].name.c_str(), timestamp);
     strftime(timestamp, sizeof timestamp, "%Y-%m-%d %H:%M:%S.000000000 %z",
              localtime(&files[1].stat.st_mtime));
-    printf("+++ %s\t%s\n", files[1].name.c_str(), timestamp);
+    fprintf(out, "+++ %s\t%s\n", files[1].name.c_str(), timestamp);
 
     size_t abx = 0, ax = 0, bx = 0;
     size_t n = diff.lines.size();
@@ -72,24 +96,24 @@ void do_print_unified_diff(const Difdef::Diff &diff, const FileInfo files[], siz
         leading_context + (last_diff_in_b - first_diff_in_b) + trailing_context;
 
     /* Print the line numbers of the hunk. */
-    printf("@@ -%d", (int)(first_diff_in_a - leading_context) + (hunk_size_in_a != 0));
-    if (hunk_size_in_a != 1) printf(",%d", (int)hunk_size_in_a);
-    printf(" +%d", (int)(first_diff_in_b - leading_context) + (hunk_size_in_b != 0));
-    if (hunk_size_in_b != 1) printf(",%d", (int)hunk_size_in_b);
-    printf(" @@\n");
+    fprintf(out, "@@ -%d", (int)(first_diff_in_a - leading_context) + (hunk_size_in_a != 0));
+    if (hunk_size_in_a != 1) fprintf(out, ",%d", (int)hunk_size_in_a);
+    fprintf(out, " +%d", (int)(first_diff_in_b - leading_context) + (hunk_size_in_b != 0));
+    if (hunk_size_in_b != 1) fprintf(out, ",%d", (int)hunk_size_in_b);
+    fprintf(out, " @@\n");
     
     /* Now print all the lines in the hunk between "start" and "end". */
     for (size_t j = first_diff_in_ab - leading_context;
                 j < last_diff_in_ab + trailing_context; ++j) {
         if (diff.lines[j].in_file(0) && diff.lines[j].in_file(1)) {
-            putchar(' ');
+            putc(' ', out);
         } else if (diff.lines[j].in_file(0)) {
-            putchar('-');
+            putc('-', out);
         } else {
             assert(diff.lines[j].in_file(1));
-            putchar('+');
+            putc('+', out);
         }
-        puts(diff.lines[j].text->c_str());
+        fprintf(out, "%s\n", diff.lines[j].text->c_str());
     }
 
     /* Any lines we skipped over are either part of the current hunk, or

@@ -11,37 +11,37 @@
 typedef Difdef::mask_t mask_t;
 
 
-static void emit_ifdef(mask_t mask)
+static void emit_ifdef(mask_t mask, FILE *out)
 {
     assert(mask != 0u);
-    printf("#if ");
+    fprintf(out, "#if ");
     bool first = true;
     for (int i = 0; i < Difdef::MAX_FILES; ++i) {
         if (mask & ((mask_t)1 << i)) {
-            if (!first) printf(" || ");
-            printf("defined(%s)", g_MacroNames[i].c_str());
+            if (!first) fprintf(out, " || ");
+            fprintf(out, "defined(%s)", g_MacroNames[i].c_str());
             first = false;
         }
     }
     assert(!first);
-    printf("\n");
+    fprintf(out, "\n");
 }
 
 
-static void emit_endif(mask_t mask)
+static void emit_endif(mask_t mask, FILE *out)
 {
     assert(mask != 0);
-    printf("#endif /* ");
+    fprintf(out, "#endif /* ");
     bool first = true;
     for (int i = 0; i < 31; ++i) {
         if (mask & ((mask_t)1 << i)) {
-            if (!first) printf(" || ");
-            printf("%s", g_MacroNames[i].c_str());
+            if (!first) fprintf(out, " || ");
+            fprintf(out, "%s", g_MacroNames[i].c_str());
             first = false;
         }
     }
     assert(!first);
-    printf(" */\n");
+    fprintf(out, " */\n");
 }
 
 
@@ -183,7 +183,7 @@ static void collapse_blank_lines(Difdef::Diff &diff)
 }
 
 
-void do_print_using_ifdefs(const Difdef::Diff &diff_)
+void do_print_using_ifdefs(const Difdef::Diff &diff_, FILE *out)
 {
     Difdef::Diff diff(diff_);
     split_if_elif_ranges_by_version(diff);
@@ -199,20 +199,20 @@ void do_print_using_ifdefs(const Difdef::Diff &diff_)
         } else {
             while ((mask & maskstack.back()) != mask) {
                 // current mask is not yet a superset of mask; keep looking backward
-                emit_endif(maskstack.back());
+                emit_endif(maskstack.back(), out);
                 maskstack.resize(maskstack.size()-1);
                 assert(!maskstack.empty());
             }
             if (mask != maskstack.back()) {
                 maskstack.push_back(mask);
-                emit_ifdef(mask);
+                emit_ifdef(mask, out);
             }
         }
-        puts(line.text->c_str());
+        fprintf(out, "%s\n", line.text->c_str());
     }
     assert(maskstack.size() >= 1);
     while (maskstack.size() != 1) {
-        emit_endif(maskstack.back());
+        emit_endif(maskstack.back(), out);
         maskstack.resize(maskstack.size()-1);
     }
 }

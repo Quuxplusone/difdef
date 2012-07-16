@@ -78,6 +78,27 @@ static void do_help()
 }
 
 
+static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out)
+{
+    /* The default output is a multicolumn format:
+     *     a  This line appears only in the first file.
+     *     a cThis line appears in files 1 and 3.
+     *     abcThis line appears in all three files.
+     *      bcThis line appears in files 2 and 3.
+     * and so on. This is not very readable, but it is
+     * eminently greppable.
+     */
+    static const char alphabet[] = "abcdefghijklmnopqrstuvwxyzABCDEF";
+    for (size_t i=0; i < diff.lines.size(); ++i) {
+        const Difdef::Diff::Line &line = diff.lines[i];
+        for (int j=0; j < diff.dimension; ++j) {
+            putc((line.in_file(j) ? alphabet[j] : ' '), out);
+        }
+        fprintf(out, "%s\n", line.text->c_str());
+    }
+}
+
+
 int main(int argc, char **argv)
 {
     std::vector<std::string> user_defined_macro_names;
@@ -186,26 +207,12 @@ int main(int argc, char **argv)
 
     /* Print out the diff. */
     if (g_PrintUnifiedDiff) {
-        do_print_unified_diff(diff, &files[0], g_LinesOfContext);
+        do_print_unified_diff(diff, &files[0], g_LinesOfContext, stdout);
     } else if (g_PrintUsingIfdefs) {
         verify_properly_nested_directives(diff, &files[0]);
-        do_print_using_ifdefs(diff);
+        do_print_using_ifdefs(diff, stdout);
     } else {
-        /* The default output is a multicolumn format:
-         *     a  This line appears only in the first file.
-         *     a cThis line appears in files 1 and 3.
-         *     abcThis line appears in all three files.
-         *      bcThis line appears in files 2 and 3.
-         * and so on. This is not very readable, but it is
-         * eminently greppable.
-         */
-        for (size_t i=0; i < diff.lines.size(); ++i) {
-            const Difdef::Diff::Line &line = diff.lines[i];
-            for (int j=0; j < difdef.NUM_FILES; ++j) {
-                putchar(line.in_file(j) ? 'a'+j : ' ');
-            }
-            puts(line.text->c_str());
-        }
+        do_print_multicolumn(diff, stdout);
     }
 
     return 0;
