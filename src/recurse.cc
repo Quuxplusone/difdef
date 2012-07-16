@@ -103,7 +103,11 @@ void do_print_ifdefs_recursively(std::vector<FileInfo> &files,
         for (size_t i=0; i < num_files; ++i) {
             if (files[i].fp == NULL)
                 continue;
+#if (_POSIX_C_SOURCE >= 200809L)
             DIR *dir = fdopendir(fileno(files[i].fp));
+#else
+            DIR *dir = opendir(files[i].name.c_str());
+#endif /* __GNUC__ */
             while (struct dirent *file = readdir(dir)) {
                 std::string relative_name = file->d_name;
                 if (processed_filenames.find(relative_name) != processed_filenames.end()) {
