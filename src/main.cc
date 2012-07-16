@@ -36,12 +36,6 @@
 
 typedef Difdef::mask_t mask_t;
 
-static bool g_PrintUsingIfdefs = false;
-std::vector<std::string> g_MacroNames;
-
-static bool g_PrintUnifiedDiff = false;
-static size_t g_LinesOfContext = 0;
-
 
 void do_error(const char *fmt, ...)
 {
@@ -102,6 +96,9 @@ int main(int argc, char **argv)
 {
     std::vector<std::string> user_defined_macro_names;
     const char *output_filename = NULL;
+    bool print_using_ifdefs = false;
+    bool print_unified_diff = false;
+    size_t lines_of_context = 0;
 
     static const struct option longopts[] = {
         { "ifdef", required_argument, NULL, 'D' },
@@ -133,7 +130,7 @@ int main(int argc, char **argv)
                 }
                 break;
             case 'D':
-                g_PrintUsingIfdefs = true;
+                print_using_ifdefs = true;
                 assert(optarg != NULL);
                 user_defined_macro_names.push_back(optarg);
                 break;
@@ -144,16 +141,16 @@ int main(int argc, char **argv)
             }
             case 'U':
             case 'u':
-                g_PrintUnifiedDiff = true;
+                print_unified_diff = true;
                 if (optarg != NULL) {
                     char *end;
                     size_t value = strtoul(optarg, &end, 10);
                     if (end == NULL || *end != '\0') {
                         do_error("invalid context length '%s'", optarg);
                     }
-                    g_LinesOfContext = std::max(g_LinesOfContext, value);
+                    lines_of_context = std::max(lines_of_context, value);
                 } else {
-                    g_LinesOfContext = std::max<size_t>(g_LinesOfContext, 3);
+                    lines_of_context = std::max<size_t>(lines_of_context, 3);
                 }
                 break;
         }
@@ -161,14 +158,14 @@ int main(int argc, char **argv)
     }
 
     if (ocontext != (size_t)-1) {
-        g_LinesOfContext = ocontext;
+        lines_of_context = ocontext;
     }
 
     assert(optind <= argc);
     const int num_files = argc - optind;
     const int num_user_defined_macros = user_defined_macro_names.size();
 
-    if (g_PrintUnifiedDiff && g_PrintUsingIfdefs) {
+    if (print_unified_diff && print_using_ifdefs) {
         do_error("options --unified/-u/-U and --ifdef/-D are mutually exclusive");
     }
 
@@ -176,14 +173,14 @@ int main(int argc, char **argv)
         do_error("no files provided");
     }
 
-    if (g_PrintUnifiedDiff && num_files != 2) {
+    if (print_unified_diff && num_files != 2) {
         do_error("unified diff requires exactly two files");
     }
 
-    if (g_PrintUsingIfdefs) {
+    if (print_using_ifdefs) {
         assert(num_user_defined_macros >= 1);
         if (num_user_defined_macros == num_files) {
-            g_MacroNames = user_defined_macro_names;
+            /* it's okay */
         } else if (num_user_defined_macros > num_files) {
             do_error("%d macro name(s) were provided via -D options, but only %d file(s)",
                      num_user_defined_macros, num_files);
@@ -228,11 +225,11 @@ int main(int argc, char **argv)
     }
 
     /* Print out the diff. */
-    if (g_PrintUnifiedDiff) {
-        do_print_unified_diff(diff, &files[0], g_LinesOfContext, out);
-    } else if (g_PrintUsingIfdefs) {
+    if (print_unified_diff) {
+        do_print_unified_diff(diff, &files[0], lines_of_context, out);
+    } else if (print_using_ifdefs) {
         verify_properly_nested_directives(diff, &files[0]);
-        do_print_using_ifdefs(diff, out);
+        do_print_using_ifdefs(diff, user_defined_macro_names, out);
     } else {
         do_print_multicolumn(diff, out);
     }
