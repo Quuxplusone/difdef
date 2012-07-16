@@ -104,11 +104,6 @@ Difdef::~Difdef()
     delete this->impl;
 }
 
-void Difdef::replace_file(int fileid, std::istream &in)
-{
-    return this->impl->replace_file(fileid, in);
-}
-
 void Difdef::replace_file(int fileid, FILE *in)
 {
     return this->impl->replace_file(fileid, in);
@@ -145,25 +140,16 @@ Difdef::Diff Difdef::merge(const std::set<int> &fileids) const
 /** DifDef_impl private class functions **********************************/
 
 
-void Difdef_impl::replace_file(int fileid, std::istream &in)
-{
-    assert(0 <= fileid && fileid < this->NUM_FILES && this->NUM_FILES <= Difdef::MAX_FILES);
-    this->lines[fileid].clear();
-    std::string line;
-    while (std::getline(in, line)) {
-        const std::string *s = this->unique_lines.add(fileid, line);
-        this->lines[fileid].push_back(s);
-    }
-}
-
 void Difdef_impl::replace_file(int fileid, FILE *in)
 {
     assert(0 <= fileid && fileid < this->NUM_FILES && this->NUM_FILES <= Difdef::MAX_FILES);
     this->lines[fileid].clear();
-    std::string line;
-    while (getline(in, line)) {
-        const std::string *s = this->unique_lines.add(fileid, line);
-        this->lines[fileid].push_back(s);
+    if (in != NULL) {
+        std::string line;
+        while (getline(in, line)) {
+            const std::string *s = this->unique_lines.add(fileid, line);
+            this->lines[fileid].push_back(s);
+        }
     }
 }
 

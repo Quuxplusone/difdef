@@ -68,7 +68,6 @@ struct Difdef_impl {
 
     Difdef_impl(int num_files): NUM_FILES(num_files), unique_lines(num_files), lines(num_files) { }
 
-    void replace_file(int fileid, std::istream &in);
     void replace_file(int fileid, FILE *in);
 
     Diff merge(mask_t fileids_mask) const;  // merge a non-empty set of files

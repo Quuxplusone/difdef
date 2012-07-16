@@ -98,10 +98,12 @@ int main(int argc, char **argv)
     const char *output_filename = NULL;
     bool print_using_ifdefs = false;
     bool print_unified_diff = false;
+    bool print_recursively = false;
     size_t lines_of_context = 0;
 
     static const struct option longopts[] = {
         { "ifdef", required_argument, NULL, 'D' },
+        { "recursive", no_argument, NULL, 'r' },
         { "unified", no_argument, NULL, 'u' },
         { "help", no_argument, NULL, 0 },
     };
@@ -109,7 +111,7 @@ int main(int argc, char **argv)
     int longopt_index;
     bool preceded_by_digit = false;
     size_t ocontext = -1;
-    while ((c = getopt_long(argc, argv, "0123456789D:o:uU:", longopts, &longopt_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "0123456789D:o:ruU:", longopts, &longopt_index)) != -1) {
         switch (c) {
             case 0:
                 if (!strcmp(longopts[longopt_index].name, "help")) {
@@ -137,6 +139,10 @@ int main(int argc, char **argv)
             case 'o': {
                 assert(optarg != NULL);
                 output_filename = optarg;
+                break;
+            }
+            case 'r': {
+                print_recursively = true;
                 break;
             }
             case 'U':
@@ -190,48 +196,88 @@ int main(int argc, char **argv)
         }
     }
 
+    if (print_recursively) {
+        if (print_using_ifdefs) {
+            if (output_filename == NULL) {
+                do_error("Recursive #ifdef merge requires an output directory");
+            } else if (!strcmp(output_filename, "-")) {
+                do_error("Output path '-' is not a directory");
+            }
+        } else if (print_unified_diff) {
+            /* it's okay */
+        } else {
+            do_error("Recursive diff requires either --ifdef or --unified");
+        }
+    }
+
     Difdef difdef(num_files);
     std::vector<FileInfo> files(num_files);
-    for (int i = 0; i < num_files; ++i) {
+    for (int i=0; i < num_files; ++i) {
         files[i].name = argv[optind + i];
-        memset(&files[i].stat, 0, sizeof files[i].stat);
         if (files[i].name == "-") {
+            /* Note that "-" always means stdin. If you have a file named
+             * "-" in the current directory, you must use "./-". */
+            if (print_recursively) {
+                do_error("Cannot compare '-' recursively");
+            }
             difdef.replace_file(i, stdin);
             fstat(fileno(stdin), &files[i].stat);
         } else {
-            FILE *in = fopen(files[i].name.c_str(), "r");
+            const char *fname = files[i].name.c_str();
+            FILE *in = fopen(fname, "r");
             if (in == NULL) {
-                do_error("Input file '%s': No such file or directory");
+                do_error("Input %s '%s': No such file or directory",
+                         print_recursively ? "path" : "file",
+                         files[i].name.c_str());
             }
+            files[i].fp = in;
             fstat(fileno(in), &files[i].stat);
-            difdef.replace_file(i, in);
-            fclose(in);
-        }
-    }
-
-    Difdef::Diff diff = difdef.merge();
-
-    /* Try to open the output file. */
-    FILE *out = stdout;
-    if (output_filename != NULL) {
-        if (!strcmp(output_filename, "-")) {
-            /* Explicitly write to stdout. */
-        } else {
-            out = fopen(output_filename, "w");
-            if (out == NULL) {
-                do_error("Output file '%s': No such file or directory");
+            const bool is_directory = S_ISDIR(files[i].stat.st_mode);
+            if (is_directory && !print_recursively) {
+                do_error("Input file '%s' is a directory", fname);
+            } else if (print_recursively && !is_directory) {
+                do_error("Input path '%s' is not a directory", fname);
+            }
+            if (!print_recursively) {
+                difdef.replace_file(i, in);
+                fclose(in);
             }
         }
     }
 
-    /* Print out the diff. */
-    if (print_unified_diff) {
-        do_print_unified_diff(diff, &files[0], lines_of_context, out);
-    } else if (print_using_ifdefs) {
-        verify_properly_nested_directives(diff, &files[0]);
-        do_print_using_ifdefs(diff, user_defined_macro_names, out);
+    if (print_using_ifdefs && print_recursively) {
+        /* If we're doing "diffn -r", then files[] is populated with
+         * open file descriptors for all the input directories. */
+        assert(output_filename != NULL);        
+        do_print_ifdefs_recursively(files, user_defined_macro_names, output_filename);
+    } else if (print_unified_diff && print_recursively) {
+        do_error("Not implemented yet -- TODO FIXME BUG HACK");
     } else {
-        do_print_multicolumn(diff, out);
+        /* If we're doing "diffn" without "-r", difdef is populated. */
+        Difdef::Diff diff = difdef.merge();
+    
+        /* Try to open the output file. */
+        FILE *out = stdout;
+        if (output_filename != NULL) {
+            if (!strcmp(output_filename, "-")) {
+                /* Explicitly write to stdout. */
+            } else {
+                out = fopen(output_filename, "w");
+                if (out == NULL) {
+                    do_error("Output file '%s': Cannot create file", output_filename);
+                }
+            }
+        }
+    
+        /* Print out the diff. */
+        if (print_unified_diff) {
+            do_print_unified_diff(diff, &files[0], lines_of_context, out);
+        } else if (print_using_ifdefs) {
+            verify_properly_nested_directives(diff, &files[0]);
+            do_print_using_ifdefs(diff, user_defined_macro_names, out);
+        } else {
+            do_print_multicolumn(diff, out);
+        }
     }
 
     return 0;
