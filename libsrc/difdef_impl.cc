@@ -26,6 +26,7 @@
 
 #include "difdef.h"
 #include "difdef_impl.h"
+#include "getline.h"
 
 
 /** Patience Diff algorithm implementation *******************************/
@@ -108,6 +109,11 @@ void Difdef::replace_file(int fileid, std::istream &in)
     return this->impl->replace_file(fileid, in);
 }
 
+void Difdef::replace_file(int fileid, FILE *in)
+{
+    return this->impl->replace_file(fileid, in);
+}
+
 Difdef::Diff Difdef::merge() const
 {
     assert(0 < this->NUM_FILES && this->NUM_FILES < Difdef::MAX_FILES);
@@ -145,6 +151,17 @@ void Difdef_impl::replace_file(int fileid, std::istream &in)
     this->lines[fileid].clear();
     std::string line;
     while (std::getline(in, line)) {
+        const std::string *s = this->unique_lines.add(fileid, line);
+        this->lines[fileid].push_back(s);
+    }
+}
+
+void Difdef_impl::replace_file(int fileid, FILE *in)
+{
+    assert(0 <= fileid && fileid < this->NUM_FILES && this->NUM_FILES <= Difdef::MAX_FILES);
+    this->lines[fileid].clear();
+    std::string line;
+    while (getline(in, line)) {
         const std::string *s = this->unique_lines.add(fileid, line);
         this->lines[fileid].push_back(s);
     }

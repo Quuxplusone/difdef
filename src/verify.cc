@@ -7,9 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "difdef.h"
-
-extern void do_error(const char *fmt, ...);
+#include "diffn.h"
 
 
 bool matches_pp_directive(const std::string &s, const char *directive)
@@ -31,7 +29,7 @@ bool matches_if_directive(const std::string &s)
 }
 
 
-void verify_properly_nested_directives(const Difdef::Diff &diff, char *fnames[])
+void verify_properly_nested_directives(const Difdef::Diff &diff, const FileInfo files[])
 {
     std::vector<std::stack<char> > nest(diff.dimension);
     std::vector<int> lineno(diff.dimension);
@@ -53,11 +51,13 @@ void verify_properly_nested_directives(const Difdef::Diff &diff, char *fnames[])
                     continue;
                 if ((is_elif || is_else || is_endif) && nest[v].empty()) {
                     do_error("file %s, line %d: %s with no preceding #if",
-                             fnames[v], lineno[v], (is_elif ? "#elif" : is_else ? "#else" : "#endif"));
+                             files[v].name.c_str(), lineno[v],
+                             (is_elif ? "#elif" : is_else ? "#else" : "#endif"));
                 }
                 if ((is_elif || is_else) && nest[v].top() == 'e') {
                     do_error("file %s, line %d: unexpected %s following an #else",
-                             fnames[v], lineno[v], (is_elif ? "#elif" : "#else"));
+                             files[v].name.c_str(), lineno[v],
+                             (is_elif ? "#elif" : "#else"));
                 }
                 if (is_if) {
                     nest[v].push('i');
@@ -73,7 +73,7 @@ void verify_properly_nested_directives(const Difdef::Diff &diff, char *fnames[])
     }
     for (int v=0; v < diff.dimension; ++v) {
         if (!nest[v].empty()) {
-            do_error("at end of file %s: expected #endif", fnames[v]);
+            do_error("at end of file %s: expected #endif", files[v].name.c_str());
         }
     }
 }

@@ -3,11 +3,14 @@ CFLAGS = -Ilibsrc -O3 -W -Wall -Wextra -pedantic
 
 all: diffn
 
-diffn: main.o ifdefs.o unified.o verify.o difdef_impl.o
+diffn: main.o ifdefs.o unified.o verify.o difdef_impl.o getline.o
 	$(CXX) $(CFLAGS) $^ -o $@
 
 difdef_impl.o: libsrc/difdef_impl.cc libsrc/patience.cc libsrc/classical.cc
 	$(CXX) $(CFLAGS) -c libsrc/difdef_impl.cc -o $@
+
+getline.o: libsrc/getline.cc
+	$(CXX) $(CFLAGS) -c $^ -o $@
 
 %.o: src/%.cc
 	$(CXX) $(CFLAGS) -c $^ -o $@

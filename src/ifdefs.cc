@@ -6,15 +6,9 @@
 #include <string>
 #include <vector>
 
-#include "difdef.h"
-
+#include "diffn.h"
 
 typedef Difdef::mask_t mask_t;
-
-bool matches_pp_directive(const std::string &s, const char *directive);
-bool matches_if_directive(const std::string &s);
-
-extern std::vector<std::string> g_MacroNames;
 
 
 static void emit_ifdef(mask_t mask)

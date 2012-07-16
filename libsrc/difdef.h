@@ -36,6 +36,7 @@ class Difdef {
     Difdef(int num_files);  // Requires: 0 < num_files <= Difdef::MAX_FILES
     ~Difdef();
     void replace_file(int fileid, std::istream &in);
+    void replace_file(int fileid, FILE *in);
 
     struct Diff;
     Diff merge() const;  // merge all N files

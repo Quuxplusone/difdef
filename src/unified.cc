@@ -1,23 +1,21 @@
 
 #include <cassert>
+#include <cstddef>
 #include <cstdio>
 #include <ctime>
 
-#include "difdef.h"
+#include "diffn.h"
 
 
-void do_print_unified_diff(const Difdef::Diff &diff, char *fnames[], size_t lines_of_context)
+void do_print_unified_diff(const Difdef::Diff &diff, const FileInfo files[], size_t lines_of_context)
 {
-    assert(fnames[0] != NULL);
-    assert(fnames[1] != NULL);
-
-    /* For now we're just faking the diff format's timestamps. */
     char timestamp[64];
-    const time_t current_time = time(NULL);
-    struct tm const *tm = localtime(&current_time);
-    strftime(timestamp, sizeof timestamp, "%Y-%m-%d %H:%M:%S.000000000 %z", tm);
-    printf("--- %s\t%s\n", fnames[0], timestamp);
-    printf("+++ %s\t%s\n", fnames[1], timestamp);
+    strftime(timestamp, sizeof timestamp, "%Y-%m-%d %H:%M:%S.000000000 %z",
+             localtime(&files[0].stat.st_mtime));
+    printf("--- %s\t%s\n", files[0].name.c_str(), timestamp);
+    strftime(timestamp, sizeof timestamp, "%Y-%m-%d %H:%M:%S.000000000 %z",
+             localtime(&files[1].stat.st_mtime));
+    printf("+++ %s\t%s\n", files[1].name.c_str(), timestamp);
 
     size_t abx = 0, ax = 0, bx = 0;
     size_t n = diff.lines.size();

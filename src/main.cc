@@ -33,8 +33,7 @@
 
 #include <getopt.h>
 
-#include "difdef.h"
-
+#include "diffn.h"
 
 typedef Difdef::mask_t mask_t;
 
@@ -44,9 +43,6 @@ std::vector<std::string> g_MacroNames;
 static bool g_PrintUnifiedDiff = false;
 static size_t g_LinesOfContext = 0;
 
-void verify_properly_nested_directives(const Difdef::Diff &diff, char *fnames[]);
-void do_print_using_ifdefs(const Difdef::Diff &diff);
-void do_print_unified_diff(const Difdef::Diff &diff, char *fnames[], size_t lines_of_context);
 
 void do_error(const char *fmt, ...)
 {
@@ -171,18 +167,28 @@ int main(int argc, char **argv)
     }
 
     Difdef difdef(num_files);
+    std::vector<FileInfo> files(num_files);
     for (int i = 0; i < num_files; ++i) {
-        std::ifstream f(argv[optind + i]);
-        difdef.replace_file(i, f);
+        files[i].name = argv[optind + i];
+        memset(&files[i].stat, 0, sizeof files[i].stat);
+        if (files[i].name == "-") {
+            difdef.replace_file(i, stdin);
+            fstat(fileno(stdin), &files[i].stat);
+        } else {
+            FILE *fp = fopen(files[i].name.c_str(), "r");
+            fstat(fileno(fp), &files[i].stat);
+            difdef.replace_file(i, fp);
+            fclose(fp);
+        }
     }
 
     Difdef::Diff diff = difdef.merge();
 
     /* Print out the diff. */
     if (g_PrintUnifiedDiff) {
-        do_print_unified_diff(diff, argv+optind, g_LinesOfContext);
+        do_print_unified_diff(diff, &files[0], g_LinesOfContext);
     } else if (g_PrintUsingIfdefs) {
-        verify_properly_nested_directives(diff, argv+optind);
+        verify_properly_nested_directives(diff, &files[0]);
         do_print_using_ifdefs(diff);
     } else {
         /* The default output is a multicolumn format:
