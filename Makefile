@@ -1,15 +1,15 @@
 CXX = g++
-CFLAGS = -O3 -W -Wall -Wextra -pedantic
+CFLAGS = -Ilibsrc -O3 -W -Wall -Wextra -pedantic
 
 all: diffn
 
-diffn: diffn_main.o difdef_impl.o
+diffn: main.o difdef_impl.o
 	$(CXX) $(CFLAGS) $^ -o $@
 
-difdef_impl.o: difdef_impl.cc patience.cc classical.cc
-	$(CXX) $(CFLAGS) -c difdef_impl.cc -o $@
+difdef_impl.o: libsrc/difdef_impl.cc libsrc/patience.cc libsrc/classical.cc
+	$(CXX) $(CFLAGS) -c libsrc/difdef_impl.cc -o $@
 
-diffn_main.o: diffn_main.cc
+main.o: src/main.cc
 	$(CXX) $(CFLAGS) -c $^ -o $@
 
 clean:
