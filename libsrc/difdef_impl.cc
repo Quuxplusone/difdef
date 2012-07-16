@@ -211,13 +211,7 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
         const Difdef_StringSet::Data &d = this->unique_lines.lookup(line);
         /* We're looking for lines that appear uniquely in "b", and also in the
          * merged file that is "a". */
-        bool failed = (d.in[fileid] != 1);  /* not unique in "b" */
-        for (int id = 0; !failed && (id < a.dimension); ++id) {
-            if (a.includes_file(id) && d.in[id] > 1) {
-                /* repeated in a member of "a", therefore repeated in "a" */
-                failed = true;
-            }
-        }
+        bool failed = (d.in[fileid] == 0);  /* appears nowhere in "b" */
         if (failed) continue;
         /* We still need to make sure that "line" is unique in the merged "a".
          * The only way to do that is to search for it. */
@@ -226,7 +220,15 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
             if (a.lines[k2].text == line) failed = true;
         }
         if (failed) continue;
-        /* Okay, the line appears exactly once in "a" and once in "b". */
+        /* Okay, the line appears exactly once in this subrange of "a". */
+        bool found = false;
+        for (size_t k2 = i; !failed && k2 < jb; ++k2) {
+            if (b[k2] == line) {
+                if (found) failed = true;
+                found = true;
+            }
+        }
+        if (failed || !found) continue;
         ua.push_back(line);
     }
 
