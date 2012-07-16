@@ -55,6 +55,8 @@ static void do_help()
     puts("");
     puts("  -u  -U NUM  --unified[=NUM]  Output NUM (default 3) lines of unified context.");
     puts("  -D NAME                      Output a single merged file using #if syntax.");
+    puts("  -o  --output=FILE            Write result to FILE instead of standard output.");
+    puts("  -r  --recursive              Recursively compare subdirectories.");
     puts("");
     puts("  --help  Output this help.");
     puts("");
@@ -62,7 +64,9 @@ static void do_help()
     puts("intended to be compatible with GNU diff/patch.");
     printf("In \"ifdef\" mode, you may supply 1 <= N <= %d files to merge. The number\n",
         (int)Difdef::MAX_FILES);
-    puts("of files must be equal to the number of -D options.");
+    puts("of files must be equal to the number of -D options. In recursive ifdef mode,");
+    puts("you must also supply an output directory name with -o; diffn will duplicate");
+    puts("the structure of the input directories in that output directory.");
     printf("In \"raw\" mode (the default), you may supply 1 <= N <= %d files to merge.\n",
         (int)Difdef::MAX_FILES);
     puts("Each line of output will be prefixed by N characters indicating which files");
@@ -103,6 +107,7 @@ int main(int argc, char **argv)
 
     static const struct option longopts[] = {
         { "ifdef", required_argument, NULL, 'D' },
+        { "output", required_argument, NULL, 'o' },
         { "recursive", no_argument, NULL, 'r' },
         { "unified", no_argument, NULL, 'u' },
         { "help", no_argument, NULL, 0 },
