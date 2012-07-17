@@ -66,6 +66,66 @@ static void emit_endif(mask_t mask, const std::vector<std::string> &macro_names,
 }
 
 
+/* A common anti-pattern I've seen is
+ *     ab#if SOMETHING
+ *     ab  foo
+ *     a #endif // foo
+ *      b  bar
+ *      b#endif // foo bar
+ *     ab  baz
+ * In this case, the only possible merge is to duplicate the entire range,
+ * even though the only difference between A and B is in a non-significant
+ * part of the #endif directive.
+ * To deal with this anti-pattern, we'll look for adjacent but mutually
+ * exclusive blocks-ending-in-#endif and merge them, yielding
+ *     ab#if SOMETHING
+ *     ab  foo
+ *      b  bar
+ *     ab#endif // foo bar
+ *     ab  baz
+ * We'll just arbitrarily pick the last file's #endif line. We should
+ * probably pick the most popular line instead, but that would require
+ * more code.
+ *
+ * Notice that this is a stupid heuristic. It won't handle
+ *     ab#if SOMETHING
+ *     ab  foo
+ *     a #endif // foo
+ *      b#endif // bar
+ *      b  baz
+ * However, if there's a shared line (e.g., a blank line) following
+ * the #endifs, the heuristic will usually work all right.
+ */
+static void coalesce_endifs(Difdef::Diff &diff)
+{
+    for (size_t i=0; i < diff.lines.size()-1; ++i) {
+        if (!matches_pp_directive(*diff.lines[i].text, "endif"))
+            continue;
+        
+        const mask_t next_block_mask = diff.lines[i+1].mask;
+        if ((diff.lines[i].mask & next_block_mask) != 0) {
+            /* We're looking for mutually exclusive blocks. */
+            continue;
+        }
+
+        /* See if the next block also ends in an #endif. */
+        size_t ni = i+1;
+        while (ni < diff.lines.size() && diff.lines[ni+1].mask == next_block_mask)
+            ++ni;
+
+        if (!matches_pp_directive(*diff.lines[ni].text, "endif")) {
+            /* The next block does *not* end in an #endif. */
+            continue;
+        }
+
+        /* We have two mutually exclusive blocks both ending in #endif.
+         * Merge the #endifs, and do another iteration. */
+        diff.lines[ni].mask |= diff.lines[i].mask;
+        diff.lines.erase(diff.lines.begin()+i);
+        i = ni-1;
+    }
+}
+
 /* For each #if in the file, look up its associated #elif/#else/#endif chain.
  * If every directive in the range has exactly the same mask, and every
  * source line in the range is included in a subset of that mask, then we
@@ -209,6 +269,8 @@ void do_print_using_ifdefs(const Difdef::Diff &diff_,
                            FILE *out)
 {
     Difdef::Diff diff(diff_);
+
+    coalesce_endifs(diff);
     split_if_elif_ranges_by_version(diff);
     collapse_blank_lines(diff);
 
