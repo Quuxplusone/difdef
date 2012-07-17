@@ -77,4 +77,4 @@ more common suffix
 EOF
 diff expected out
 
-##rm -f a b c expected out
+rm -f a b c expected out

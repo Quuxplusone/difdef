@@ -29,4 +29,4 @@ cat >expected <<EOF
 EOF
 diff expected out
 
-rm a b expected out
+rm -f a b expected out

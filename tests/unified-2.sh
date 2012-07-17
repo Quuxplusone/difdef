@@ -65,4 +65,4 @@ diff -U0 b a | tail -n +3 >expected
 ./diffn -U0 b a | tail -n +3 >out
 diff expected out
 
-rm a b expected out
+rm -f a b expected out

@@ -38,3 +38,5 @@ diff expected out
 
 ./diffn -DV2 -DV1 b a >out
 diff expected out
+
+rm -f a b expected out
