@@ -32,11 +32,11 @@ diff expected out
 
 ./diffn -DA -DB a b -o out
 cat >expected <<EOF
-#if defined(A)
+#ifdef A
 /* the quick
    brown fox */
 #endif /* A */
-#if defined(B)
+#ifdef B
 /* the fast
    brown fox */
 #endif /* B */
@@ -58,11 +58,11 @@ diff expected out
 
 ./diffn -DA -DB a b -o out
 cat >expected <<EOF
-#if defined(A)
+#ifdef A
 /* the quick
    brown fox */
 #endif /* A */
-#if defined(B)
+#ifdef B
 /* the quick
    red fox */
 #endif /* B */

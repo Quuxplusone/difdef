@@ -20,13 +20,13 @@ diff expected out
 
 ./diffn -DV1 -DV2 a b >out
 cat >expected <<EOF
-#if defined(V1)
+#ifdef V1
 #if A
 #if B
 #endif B
 #endif A
 #endif /* V1 */
-#if defined(V2)
+#ifdef V2
 #if A
 #endif B
 #endif /* V2 */

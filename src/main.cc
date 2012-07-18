@@ -54,7 +54,9 @@ static void do_help()
     puts("Compare or merge multiple files.");
     puts("");
     puts("  -u  -U NUM  --unified[=NUM]  Output NUM (default 3) lines of unified context.");
-    puts("  -D NAME                      Output a single merged file using #if syntax.");
+    puts("  -D NAME     --ifdef=NAME     Output a single merged file using #ifdef syntax.");
+    puts("  --if=EXPR                    As above, but using arbitrary #if syntax.");
+    puts("  -D NAME=VALUE                Equivalent to --if=NAME==VALUE.");
     puts("  -o  --output=FILE            Write result to FILE instead of standard output.");
     puts("  -r  --recursive              Recursively compare subdirectories.");
     puts("");
@@ -106,6 +108,7 @@ int main(int argc, char **argv)
     size_t lines_of_context = 0;
 
     static const struct option longopts[] = {
+        { "if", required_argument, NULL, 0 },
         { "ifdef", required_argument, NULL, 'D' },
         { "output", required_argument, NULL, 'o' },
         { "recursive", no_argument, NULL, 'r' },
@@ -121,6 +124,10 @@ int main(int argc, char **argv)
             case 0:
                 if (!strcmp(longopts[longopt_index].name, "help")) {
                     do_help();
+                } else if (!strcmp(longopts[longopt_index].name, "if")) {
+                    print_using_ifdefs = true;
+                    assert(optarg != NULL);
+                    user_defined_macro_names.push_back(optarg);
                 } else {
                     assert(false);
                 }
@@ -136,11 +143,20 @@ int main(int argc, char **argv)
                     ocontext = (c - '0');
                 }
                 break;
-            case 'D':
+            case 'D': {
                 print_using_ifdefs = true;
                 assert(optarg != NULL);
-                user_defined_macro_names.push_back(optarg);
+                const char *equals = strchr(optarg, '=');
+                std::string expression;
+                if (equals != NULL) {
+                    expression = std::string(optarg, equals-optarg)
+                               + "==" + std::string(equals+1);
+                } else {
+                    expression = std::string(BUILTIN_DEFINE) + optarg;
+                }
+                user_defined_macro_names.push_back(expression);
                 break;
+            }
             case 'o': {
                 assert(optarg != NULL);
                 output_filename = optarg;
@@ -177,7 +193,7 @@ int main(int argc, char **argv)
     const int num_user_defined_macros = user_defined_macro_names.size();
 
     if (print_unified_diff && print_using_ifdefs) {
-        do_error("options --unified/-u/-U and --ifdef/-D are mutually exclusive");
+        do_error("options --unified/-u/-U and --if/-D are mutually exclusive");
     }
 
     if (num_files == 0) {

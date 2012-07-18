@@ -15,7 +15,7 @@ EOF
 cat >expected <<EOF
 #if SOMETHING
   foo
-#if defined(B)
+#ifdef B
   bar
 #endif /* B */
 #endif // foo bar

@@ -26,7 +26,7 @@ common
 prefix
 #if TWO
 foo
-#if defined(V2)
+#ifdef V2
 bar
 #endif /* V2 */
 baz

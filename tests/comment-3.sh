@@ -28,10 +28,10 @@ prefix
    with a single quote ' in it
    but it doesn't open a character
    literal */
-#if defined(A)
+#ifdef A
 uncommon
 #endif /* A */
-#if defined(B)
+#ifdef B
 uncommon2
 #endif /* B */
 suffix

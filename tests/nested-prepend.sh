@@ -20,7 +20,7 @@ EOF
 ./diffn -DV1 -DV2 -DV3 a b c >out
 cat >expected <<EOF
 void foo() {
-#if defined(V3)
+#ifdef V3
     printf("H");  /* oh yeah, need an H */
 #endif /* V3 */
 #if defined(V2) || defined(V3)

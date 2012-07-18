@@ -50,7 +50,7 @@ void func1() {
     x += 1;
 }
 
-#if defined(V2)
+#ifdef V2
 void threehalves() {
     x += 1.5;
 }

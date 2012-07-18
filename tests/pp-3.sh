@@ -17,13 +17,13 @@ common
 suffix
 EOF
 
-./diffn -DA -DB a b >out
+./diffn --if=A --if=B a b >out
 cat >expected <<EOF
-#if defined(A)
+#if A
 uncommon
 prefix
 #endif /* A */
-#if defined(B)
+#if B
 uncommon2
 prefix2
 #endif /* B */

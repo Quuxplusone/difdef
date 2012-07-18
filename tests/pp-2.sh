@@ -13,12 +13,12 @@ EOF
 
 ./diffn -DA -DB a b >out
 cat >expected <<EOF
-#if defined(A)
+#ifdef A
 #if a
   foo  // should not be merged
 #endif
 #endif /* A */
-#if defined(B)
+#ifdef B
 #ifdef a
   foo  // should not be merged
 #else

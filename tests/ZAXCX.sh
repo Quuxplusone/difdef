@@ -55,7 +55,7 @@ diff expected out
 cat >expected <<EOF
 #include <stdio.h>
 #include <stdlib.h>
-#if defined(V1)
+#ifdef V1
 #include <string.h>
 #endif /* V1 */
 
@@ -63,7 +63,7 @@ void func1() {
     x += 1;
 }
 
-#if defined(V2)
+#ifdef V2
 void threehalves() {
     x += 1.5;
 }

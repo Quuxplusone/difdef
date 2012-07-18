@@ -50,19 +50,19 @@ cat >expected <<EOF
 common
 #else
 prefix
-#if defined(V1)
+#ifdef V1
 #if ONE  // can't merge
 foo
 #endif ONE
 #endif /* V1 */
-#if defined(V2)
+#ifdef V2
 #if ONE  // can't merge
 foo
 bar
 baz
 #endif ONE
 #endif /* V2 */
-#if defined(V3)
+#ifdef V3
 #if ONE  // can't merge
 foo
 #endif ONE_A

@@ -28,16 +28,16 @@ mkdir expected/b-only
 cat >expected/shared/also-shared.txt <<EOF
 also shared by a and b
 but
-#if defined(A)
+#ifdef A
 different
 #endif /* A */
-#if defined(B)
+#ifdef B
 somewhat different
 #endif /* B */
 between them
 EOF
 cat >expected/a-only/just-a.txt <<EOF
-#if defined(A)
+#ifdef A
 just in a
 #endif /* A */
 EOF

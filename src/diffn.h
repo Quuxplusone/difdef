@@ -28,6 +28,9 @@
 
 #include "difdef.h"
 
+#define BUILTIN_DEFINE "@def "
+#define BUILTIN_DEFINE_LEN strlen("@def ")
+
 struct FileInfo {
     std::string name;
     FILE *fp;

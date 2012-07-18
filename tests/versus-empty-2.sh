@@ -20,7 +20,7 @@ if [ ! -r out/empty ]; then
 fi
 diff out/empty a/empty
 cat >expected <<EOF
-#if defined(V1)
+#ifdef V1
 foo
 #endif /* V1 */
 EOF

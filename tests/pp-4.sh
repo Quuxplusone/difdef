@@ -59,7 +59,7 @@ diff expected out
 cat >expected <<EOF
 common
 prefix
-#if defined(V1)
+#ifdef V1
 #if TWO
   foo  // should not be merged
 #elif THREE
@@ -68,7 +68,7 @@ prefix
   baz  // should not be merged
 #endif  // match, but can't merge
 #endif /* V1 */
-#if defined(V2)
+#ifdef V2
 #if ONE
   roo
 #elif TWO
@@ -91,7 +91,7 @@ diff expected out
 cat >expected <<EOF
 common
 prefix
-#if defined(V2)
+#ifdef V2
 #if ONE
   roo
 #elif TWO
@@ -102,7 +102,7 @@ prefix
   baz  // should not be merged
 #endif  // match, but can't merge
 #endif /* V2 */
-#if defined(V1)
+#ifdef V1
 #if TWO
   foo  // should not be merged
 #elif THREE

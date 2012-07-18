@@ -10,10 +10,10 @@ EOF
 ./diffn -DRATS -DBATS a b >out
 cat >expected <<EOF
 foo
-#if defined(RATS)
+#ifdef RATS
 baz
 #endif /* RATS */
-#if defined(BATS)
+#ifdef BATS
 bats
 #endif /* BATS */
 EOF

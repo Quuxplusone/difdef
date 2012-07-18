@@ -14,10 +14,10 @@ diff -r a c
 cat >b/b-only.txt <<EOF
 baz
 EOF
-./diffn -r -DA -DB a b -o out
+./diffn -r --if=A --if=B a b -o out
 cp -r a expected
 cat >expected/b-only.txt <<EOF
-#if defined(B)
+#if B
 baz
 #endif /* B */
 EOF

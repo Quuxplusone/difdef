@@ -23,12 +23,12 @@ EOF
 cat >expected <<EOF
 common
 prefix
-#if defined(A)
+#ifdef A
 #if a
   foo  // should not be merged
 #endif
 #endif /* A */
-#if defined(B)
+#ifdef B
 #ifdef a
   foo  // should not be merged
 #else

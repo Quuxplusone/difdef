@@ -28,14 +28,14 @@ cat >expected <<EOF
 #ifndef FOO
  #define FOO
 
-#if defined(B)
+#ifdef B
 #pragma once
 #endif /* B */
 
 #include <stdio.h>
 
 int foo(void);
-#if defined(B)
+#ifdef B
 int bar(void);
 #endif /* B */
 

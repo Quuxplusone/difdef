@@ -43,7 +43,7 @@ EOF
 cat >expected <<EOF
 void foo();
 
-#if defined(V3)
+#ifdef V3
 void baz();
 #endif /* V3 */
 void bar();

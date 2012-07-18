@@ -38,14 +38,31 @@ typedef Difdef::mask_t mask_t;
 static void emit_ifdef(mask_t mask, const std::vector<std::string> &macro_names, FILE *out)
 {
     assert(mask != 0u);
-    fprintf(out, "#if ");
     bool first = true;
     for (int i = 0; i < Difdef::MAX_FILES; ++i) {
-        if (mask & ((mask_t)1 << i)) {
-            if (!first) fprintf(out, " || ");
-            fprintf(out, "defined(%s)", macro_names[i].c_str());
-            first = false;
+        mask_t bit_i = (mask_t)1 << i;
+        if ((mask & bit_i) == 0)
+            continue;
+        assert((size_t)i < macro_names.size());
+        const bool builtin = !strncmp(macro_names[i].c_str(), BUILTIN_DEFINE, BUILTIN_DEFINE_LEN);
+        if ((mask == bit_i) && builtin) {
+            /* This roughly matches GNU diff's "--ifdef=" behavior, in the
+             * event that we have only two files. */
+            fprintf(out, "#ifdef %s\n", macro_names[i].c_str() + BUILTIN_DEFINE_LEN);
+            return;
         }
+        if (first) {
+            fprintf(out, "#if ");
+        } else {
+            fprintf(out, " || ");
+        }
+        if (builtin) {
+            fprintf(out, "defined(%s)", macro_names[i].c_str() + BUILTIN_DEFINE_LEN);
+        } else {
+            /* Notice that we do not parenthesize subexpressions. */
+            fprintf(out, "%s", macro_names[i].c_str());
+        }
+        first = false;
     }
     assert(!first);
     fprintf(out, "\n");
@@ -59,8 +76,13 @@ static void emit_endif(mask_t mask, const std::vector<std::string> &macro_names,
     bool first = true;
     for (int i = 0; i < 31; ++i) {
         if (mask & ((mask_t)1 << i)) {
+            const bool builtin = !strncmp(macro_names[i].c_str(), BUILTIN_DEFINE, BUILTIN_DEFINE_LEN);
             if (!first) fprintf(out, " || ");
-            fprintf(out, "%s", macro_names[i].c_str());
+            if (builtin) {
+                fprintf(out, "%s", macro_names[i].c_str() + BUILTIN_DEFINE_LEN);
+            } else {
+                fprintf(out, "%s", macro_names[i].c_str());
+            }
             first = false;
         }
     }

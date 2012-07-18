@@ -38,20 +38,20 @@ EOF
 cat >expected <<EOF
 
 #include <stdio.h>
-#if defined(B)
+#ifdef B
 #include <stdlib.h>  /* extra header */
 #endif /* B */
 
 int main()
 {
-#if defined(A)
+#ifdef A
     puts("hello world");
 #endif /* A */
-#if defined(B)
+#ifdef B
     puts("hello \\
 world");
 #endif /* B */
-#if defined(C)
+#ifdef C
     puts("hello \\
 cruel\\
 world");

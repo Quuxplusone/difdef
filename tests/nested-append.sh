@@ -24,7 +24,7 @@ cat >expected <<EOF
 void foo() {
 #if defined(V2) || defined(V3)
     printf("Hello world!");
-#if defined(V3)
+#ifdef V3
     printf("\n");  /* oh yeah, need a newline */
 #endif /* V3 */
 #endif /* V2 || V3 */
