@@ -62,6 +62,10 @@ class Difdef {
         bool includes_file(int fileid) const;
         mask_t all_files_mask() const;
 
+        // This function is hard to explain. See the implementation.
+        void use_synchronization_points(const std::vector<size_t> &);
+        void shuffle_identical_masks_together();
+
       private:
         Diff(int num_files, mask_t mask);  // private constructor means you can't create new ones
         void append(const Diff &);

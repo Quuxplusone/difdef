@@ -78,6 +78,153 @@ mask_t Difdef::Diff::all_files_mask() const
     return this->mask;
 }
 
+static std::set<mask_t> reduce_masks(const std::set<mask_t> &s)
+{
+    bool indep[Difdef::MAX_FILES][Difdef::MAX_FILES] = {};
+    for (int i=0; i < Difdef::MAX_FILES; ++i) {
+        mask_t bit_i = (mask_t)1 << i;
+        for (int j=0; j < i; ++j) {
+            mask_t bit_j = (mask_t)1 << j;
+            for (std::set<mask_t>::const_iterator it = s.begin(); it != s.end(); ++it) {
+                mask_t mask = *it;
+                if (!(mask & bit_i) != !(mask & bit_j)) {
+                    indep[i][j] = true;
+                    indep[j][i] = true;
+                    break;
+                }
+            }
+        }
+    }
+    std::set<mask_t> result;
+    for (int i=0; i < Difdef::MAX_FILES; ++i) {
+        mask_t mask = (mask_t)1 << i;
+        bool already_added = false;
+        for (int j=0; j < Difdef::MAX_FILES; ++j) {
+            if (indep[i][j]) continue;
+            if (j < i) {
+                already_added = true;
+            } else {
+                mask |= (mask_t)1 << j;
+            }
+        }
+        if (!already_added)
+            result.insert(mask);
+    }
+    return result;
+}
+
+void Difdef::Diff::use_synchronization_points(const std::vector<size_t> &points)
+{
+    /* This routine addresses a problem that we can encounter if the input
+     * files contain multi-line comments or string literals.
+     * Suppose we have a Diff that looks like this:
+     *     ab There is a
+     *     a  ro-
+     *     ab dent in my car!
+     * and we don't want to insert an #endif after "ro-"; perhaps the hyphen
+     * in our hypothetical example corresponds to a backslash-continuation
+     * or multi-line comment in the real world.
+     *   In this case, we generate a sequence of "synchronization points"
+     * where it *is* okay to insert #if/#endif directives.
+     *     SYNC
+     *     ab There is a
+     *     SYNC
+     *     a  ro-
+     *     ab dent in my car!
+     *     SYNC
+     * Internally, these SYNC points are represented as line numbers; our
+     * example would have the vector {0, 1, 3}.  (In fact 0 and N are always
+     * required to be sync points.)
+     *   This routine considers the Diff as a sequence of mini-Diffs
+     * delimited by sync points. Each mini-Diff can be treated trivially
+     * by exploding it, if necessary:
+     *     a  There is a
+     *      b There is a
+     *     a  ro-
+     *     a  dent in my car!
+     *      b dent in my car!
+     * The above is a valid (if inefficient) output from this routine.
+     *   If every line in one of these mini-Diffs has the same mask, then
+     * we don't need to explode it. Contrariwise, if *any* two lines in
+     * a mini-Diff have *different* masks, we *must* explode the mini-Diff,
+     * because by definition there is no place inside the mini-Diff to
+     * insert a pair of #if/#endif directives.
+     */
+    if (this->lines.empty()) return;
+
+    assert(points[0] == 0);
+    assert(points.back() == this->lines.size());
+
+    std::vector<Line> new_lines;
+    int spx = 1;
+    std::set<mask_t> masks;
+
+    for (size_t i=0; true; ++i) {
+        if (i == points[spx]) {
+            /* Explode the mini-Diff that just ended. */
+            masks = reduce_masks(masks);
+            for (std::set<mask_t>::const_iterator it = masks.begin();
+                                                  it != masks.end();
+                                                  ++it) {
+                /* Explode this branch of the mini-Diff. */
+                mask_t this_branch = *it;
+                for (size_t j = points[spx-1];
+                            j < points[spx]; ++j) {
+                    if (this->lines[j].mask & this_branch) {
+                        assert((this->lines[j].mask & this_branch) == this_branch);
+                        const std::string &text = *this->lines[j].text;
+                        new_lines.push_back(Difdef::Diff::Line(&text, this_branch));
+                    }
+                }
+            }
+            /* All branches have now been exploded. */
+            masks.clear();
+            ++spx;
+        }
+        if (i == this->lines.size())
+            break;
+        masks.insert(this->lines[i].mask);
+    }
+    
+    assert(new_lines.size() >= this->lines.size());
+    this->lines = new_lines;
+}
+
+void Difdef::Diff::shuffle_identical_masks_together()
+{
+    /* Given a diff like
+     *     a hello
+     *      bgoodnight
+     *     a sailor
+     *      bmoon
+     * we want to turn it into
+     *     a hello
+     *     a sailor
+     *      bgoodnight
+     *      bmoon
+     * This corresponds to a "bubble sort", where two elements can be
+     * swapped only if their masks are disjoint, and the sort order is
+     * numerically by mask.
+     */
+    for (size_t s=1; s < this->lines.size(); ++s) {
+        /* "s" stands for "source". Find the destination ("d") of this line. */
+        size_t d = s;
+        for ( ; d > 0; --d) {
+            if ((this->lines[s].mask & this->lines[d-1].mask) != 0) {
+                /* The two lines are not comparable. Stop. */
+                break;
+            } else if (this->lines[s].mask > this->lines[d-1].mask) {
+                /* The two lines are already in the correct order. */
+                break;
+            }
+        }
+        /* Bubble this line up to position "j". */
+        assert(d <= s);
+        for (size_t k = s; k > d; --k) {
+            std::swap(this->lines[k], this->lines[k-1]);
+        }
+    }
+}
 
 Difdef::Diff::Line::Line(const std::string *text, mask_t mask): text(text), mask(mask)
 {
