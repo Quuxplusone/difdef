@@ -39,6 +39,8 @@ void verify_properly_nested_directives(const Difdef::Diff &diff,
                                        const FileInfo files[]);
 bool matches_pp_directive(const std::string &s, const char *directive);
 bool matches_if_directive(const std::string &s);
+bool opens_comment(const std::string &s);
+bool closes_comment(const std::string &s);
 void do_print_using_ifdefs(const Difdef::Diff &diff,
                            const std::vector<std::string> &macro_names,
                            FILE *out);

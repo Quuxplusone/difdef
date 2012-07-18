@@ -29,6 +29,9 @@
 
 #include "diffn.h"
 
+#include "state-machine.cc"
+
+
 typedef Difdef::mask_t mask_t;
 
 
@@ -98,7 +101,7 @@ static void emit_endif(mask_t mask, const std::vector<std::string> &macro_names,
  */
 static void coalesce_endifs(Difdef::Diff &diff)
 {
-    for (size_t i=0; i < diff.lines.size()-1; ++i) {
+    for (size_t i=0; i+1 < diff.lines.size(); ++i) {
         if (!matches_pp_directive(*diff.lines[i].text, "endif"))
             continue;
         
@@ -110,7 +113,7 @@ static void coalesce_endifs(Difdef::Diff &diff)
 
         /* See if the next block also ends in an #endif. */
         size_t ni = i+1;
-        while (ni < diff.lines.size() && diff.lines[ni+1].mask == next_block_mask)
+        while (ni+1 < diff.lines.size() && diff.lines[ni+1].mask == next_block_mask)
             ++ni;
 
         if (!matches_pp_directive(*diff.lines[ni].text, "endif")) {
@@ -126,6 +129,7 @@ static void coalesce_endifs(Difdef::Diff &diff)
     }
 }
 
+
 /* For each #if in the file, look up its associated #elif/#else/#endif chain.
  * If every directive in the range has exactly the same mask, and every
  * source line in the range is included in a subset of that mask, then we
@@ -135,56 +139,72 @@ static void coalesce_endifs(Difdef::Diff &diff)
 static void split_if_elif_ranges_by_version(Difdef::Diff &diff)
 {
     for (size_t i=0; i < diff.lines.size(); ++i) {
-        if (!matches_if_directive(*diff.lines[i].text))
+        const std::string &text = *diff.lines[i].text;
+        CStateMachine state_machine(text);
+        if (!matches_if_directive(text) && !state_machine.in_something())
             continue;
+        
+        size_t end_of_initial_multiline_construct =
+            (state_machine.in_something() ? diff.lines.size() : i);
 
-        /* We have an #if. See if its range is all under the same mask. */
+        /* We have an #if, or a comment. See if its range is all under
+         * the same mask. */
         bool need_to_split = false;
         size_t end_of_range = diff.lines.size();
         mask_t desired_mask = diff.lines[i].mask;
         std::vector<std::stack<char> > nest(diff.dimension);
+        std::vector<CStateMachine> state_machines(diff.dimension);
         for (size_t j = i; j < diff.lines.size(); ++j) {
             if (diff.lines[j].mask & ~desired_mask) {
                 /* This line's mask is NOT a subset of the desired mask. */
                 need_to_split = true;
             }
-            const bool is_if = matches_if_directive(*diff.lines[j].text);
-            const bool is_elif = matches_pp_directive(*diff.lines[j].text, "elif");
-            const bool is_else = matches_pp_directive(*diff.lines[j].text, "else");
-            const bool is_endif = matches_pp_directive(*diff.lines[j].text, "endif");
-            const bool is_anything = is_if || is_elif || is_else || is_endif;
-            if (is_anything && (diff.lines[j].mask != desired_mask)) {
-                /* All top-level pp-directives in the range must have the same mask. */
-                for (int v=0; v < diff.dimension; ++v) {
-                    if (!diff.lines[j].in_file(v)) continue;
-                    if (nest[v].size() == (is_if ? 0 : 1)) {
-                        need_to_split = true;
+            const std::string &text = *diff.lines[j].text;
+            const bool is_if = matches_if_directive(text);
+            const bool is_elif = matches_pp_directive(text, "elif");
+            const bool is_else = matches_pp_directive(text, "else");
+            const bool is_endif = matches_pp_directive(text, "endif");
+            const bool is_any_pp = is_if || is_elif || is_else || is_endif;
+
+            for (int v=0; v < diff.dimension; ++v) {
+                if (!diff.lines[j].in_file(v)) continue;
+                if (!state_machines[v].in_something()) {
+                    /* All top-level pp-directives in the range must have the same mask. */
+                    if (is_any_pp && (diff.lines[j].mask != desired_mask)) {
+                        if (nest[v].size() == (is_if ? 0 : 1))
+                            need_to_split = true;
+                    }
+                    if (is_if) {
+                        nest[v].push('i');
+                    } else if (is_else) {
+                        assert(nest[v].top() == 'i');
+                        nest[v].top() = 'e';
+                    } else if (is_endif) {
+                        assert(!nest[v].empty());
+                        nest[v].pop();
                     }
                 }
+                state_machines[v].update(text);
             }
-            if (is_if) {
-                for (int v=0; v < diff.dimension; ++v) {
-                    if (!diff.lines[j].in_file(v)) continue;
-                    nest[v].push('i');
+
+            bool someone_is_in_pp_nest = false;
+            bool someone_is_in_multiline_construct = false;
+            for (int v=0; v < diff.dimension; ++v) {
+                if (state_machines[v].in_something())
+                    someone_is_in_multiline_construct = true;
+                if (!nest[v].empty())
+                    someone_is_in_pp_nest = true;
+            }
+            
+            if (someone_is_in_multiline_construct) {
+                if (j < diff.lines.size() &&
+                        diff.lines[j].mask != diff.lines[j+1].mask) {
+                    need_to_split = true;
                 }
-            } else if (is_else) {
-                for (int v=0; v < diff.dimension; ++v) {
-                    if (!diff.lines[j].in_file(v)) continue;
-                    assert(nest[v].top() == 'i');
-                    nest[v].top() = 'e';
-                }
-            } else if (is_endif) {
-                for (int v=0; v < diff.dimension; ++v) {
-                    if (!diff.lines[j].in_file(v)) continue;
-                    assert(!nest[v].empty());
-                    nest[v].pop();
-                }
-                bool done = true;
-                for (int v=0; v < diff.dimension; ++v) {
-                    if (!nest[v].empty())
-                        done = false;
-                }
-                if (done) {
+            } else {
+                end_of_initial_multiline_construct =
+                    std::min(end_of_initial_multiline_construct, j);
+                if (!someone_is_in_pp_nest) {
                     end_of_range = j+1;
                     break;
                 }
@@ -193,8 +213,6 @@ static void split_if_elif_ranges_by_version(Difdef::Diff &diff)
 
         /* The range must contain at least two lines. */
         assert(i+1 < end_of_range && end_of_range <= diff.lines.size());
-        assert(matches_if_directive(*diff.lines[i].text));
-        assert(matches_pp_directive(*diff.lines[end_of_range-1].text, "endif"));
 
         if (need_to_split) {
             std::vector<std::vector<const std::string *> > split_versions(diff.dimension);
@@ -208,6 +226,8 @@ static void split_if_elif_ranges_by_version(Difdef::Diff &diff)
             diff.lines.erase(diff.lines.begin()+i, diff.lines.begin()+end_of_range);
             diff.lines.insert(diff.lines.begin()+i, split_merge.lines.begin(), split_merge.lines.end());
             i += split_merge.lines.size()-1;
+        } else {
+            i = end_of_initial_multiline_construct;
         }
     }
 }

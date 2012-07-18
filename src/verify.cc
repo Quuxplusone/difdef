@@ -30,6 +30,8 @@
 
 #include "diffn.h"
 
+#include "state-machine.cc"
+
 
 bool matches_pp_directive(const std::string &s, const char *directive)
 {
@@ -52,23 +54,28 @@ bool matches_if_directive(const std::string &s)
 
 void verify_properly_nested_directives(const Difdef::Diff &diff, const FileInfo files[])
 {
+    std::vector<CStateMachine> state_machines(diff.dimension);
     std::vector<std::stack<char> > nest(diff.dimension);
     std::vector<int> lineno(diff.dimension);
 
     for (size_t i=0; i < diff.lines.size(); ++i) {
+        const std::string &text = *diff.lines[i].text;
         for (int v=0; v < diff.dimension; ++v) {
-            if (diff.lines[i].in_file(v))
-                lineno[v] += 1;
+            if (!diff.lines[i].in_file(v))
+                continue;
+            lineno[v] += 1;
         }
-        const bool is_if = matches_if_directive(*diff.lines[i].text);
-        const bool is_elif = matches_pp_directive(*diff.lines[i].text, "elif");
-        const bool is_else = matches_pp_directive(*diff.lines[i].text, "else");
-        const bool is_endif = matches_pp_directive(*diff.lines[i].text, "endif");
+        const bool is_if = matches_if_directive(text);
+        const bool is_elif = matches_pp_directive(text, "elif");
+        const bool is_else = matches_pp_directive(text, "else");
+        const bool is_endif = matches_pp_directive(text, "endif");
         const bool is_anything = is_if || is_elif || is_else || is_endif;
 
         if (is_anything) {
             for (int v=0; v < diff.dimension; ++v) {
                 if (!diff.lines[i].in_file(v))
+                    continue;
+                if (state_machines[v].in_something())
                     continue;
                 if ((is_elif || is_else || is_endif) && nest[v].empty()) {
                     do_error("file %s, line %d: %s with no preceding #if",
@@ -91,10 +98,23 @@ void verify_properly_nested_directives(const Difdef::Diff &diff, const FileInfo 
                 }
             }
         }
+
+        for (int v=0; v < diff.dimension; ++v) {
+            if (!diff.lines[i].in_file(v))
+                continue;
+            state_machines[v].update(text);
+        }
     }
     for (int v=0; v < diff.dimension; ++v) {
+        const char *filename = files[v].name.c_str();
         if (!nest[v].empty()) {
-            do_error("at end of file %s: expected #endif", files[v].name.c_str());
+            do_error("at end of file %s: expected #endif", filename);
+        } else if (state_machines[v].in_comment) {
+            do_error("at end of file %s: unterminated comment", filename);
+        } else if (state_machines[v].in_string) {
+            do_error("at end of file %s: unterminated string literal", filename);
+        } else if (state_machines[v].in_char) {
+            do_error("at end of file %s: unterminated character literal", filename);
         }
     }
 }
