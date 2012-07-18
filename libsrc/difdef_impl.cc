@@ -28,6 +28,8 @@
 #include "difdef_impl.h"
 #include "getline.h"
 
+typedef Difdef::mask_t mask_t;
+
 
 /** Patience Diff algorithm implementation *******************************/
 
@@ -71,7 +73,7 @@ bool Difdef::Diff::includes_file(int fileid) const
     return (this->mask & ((mask_t)1 << fileid)) != 0;
 }
 
-Difdef::mask_t Difdef::Diff::all_files_mask() const
+mask_t Difdef::Diff::all_files_mask() const
 {
     return this->mask;
 }
