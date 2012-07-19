@@ -317,23 +317,19 @@ void do_print_using_ifdefs(const Difdef::Diff &diff_,
     collapse_blank_lines(diff);
 
     std::vector<mask_t> maskstack;
-    maskstack.push_back(((mask_t)1 << diff.dimension) - (mask_t)1);  // every file
+    maskstack.push_back(diff.all_files_mask());
     for (size_t i=0; i < diff.lines.size(); ++i) {
         const Difdef::Diff::Line &line = diff.lines[i];
         const mask_t mask = line.mask;
-        if (mask == maskstack.back()) {
-            // we don't need to do anything
-        } else {
-            while ((mask & maskstack.back()) != mask) {
-                // current mask is not yet a superset of mask; keep looking backward
-                emit_endif(maskstack.back(), macro_names, out);
-                maskstack.resize(maskstack.size()-1);
-                assert(!maskstack.empty());
-            }
-            if (mask != maskstack.back()) {
-                maskstack.push_back(mask);
-                emit_ifdef(mask, macro_names, out);
-            }
+        while ((mask & maskstack.back()) != mask) {
+            // current mask is not yet a superset of mask; keep looking backward
+            emit_endif(maskstack.back(), macro_names, out);
+            maskstack.resize(maskstack.size()-1);
+            assert(!maskstack.empty());
+        }
+        if (mask != maskstack.back()) {
+            maskstack.push_back(mask);
+            emit_ifdef(mask, macro_names, out);
         }
         fprintf(out, "%s\n", line.text->c_str());
     }
