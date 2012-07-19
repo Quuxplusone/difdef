@@ -274,15 +274,37 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
     a = result;
 }
 
+
+static bool are_equal(const std::vector<const std::string *> &a,
+                      const std::vector<const std::string *> &b)
+{
+    const size_t n = a.size();
+    if (b.size() != n) return false;
+    for (size_t i=0; i < n; ++i) {
+        if (a[i] != b[i]) return false;
+    }
+    return true;
+}
+
+
 Difdef::Diff Difdef::simply_concatenate(const std::vector<std::vector<const std::string *> > &vec)
 {
     int num_files = vec.size();
+    mask_t have_handled = 0;
     Diff result(num_files, ((mask_t)1 << num_files) - (mask_t)1);
     for (int v=0; v < num_files; ++v) {
         mask_t vmask = (mask_t)1 << v;
+        if (have_handled & vmask) continue;
+        for (int w = v; w < num_files; ++w) {
+            const mask_t wmask = (mask_t)1 << w;
+            if (have_handled & wmask) continue;
+            if (are_equal(vec[v], vec[w]))
+                vmask |= wmask;
+        }
         for (size_t i=0; i < vec[v].size(); ++i) {
             result.lines.push_back(Difdef::Diff::Line(vec[v][i], vmask));
         }
+        have_handled |= vmask;
     }
     return result;
 }

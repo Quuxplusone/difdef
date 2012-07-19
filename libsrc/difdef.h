@@ -70,8 +70,9 @@ class Difdef {
         friend class Difdef_impl;
     };
 
-    // Construct a new Diff that's just these N files in order; don't merge
-    // common lines at all. Caller retains ownership of the strings.
+    // Construct a new Diff that's just these N files in order; merge common
+    // versions if the whole version is identical, but don't merge lines from
+    // differing versions at all. Caller retains ownership of the strings.
     static Diff simply_concatenate(const std::vector<std::vector<const std::string *> > &);
 
   private:
