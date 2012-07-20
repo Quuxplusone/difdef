@@ -155,19 +155,99 @@ void Difdef_impl::replace_file(int fileid, FILE *in)
     }
 }
 
+
+/* If this line has a brace in column 1, it's highest-priority.
+ * If this line has a brace in column 2, it's next-highest. ...
+ * If it's completely blank, it's above average priority.
+ * Otherwise, it's low priority.
+ */
+static int diff_ending_priority(const char *text)
+{
+    int i = 0;
+    while (isspace(text[i])) ++i;
+    if (text[i] == '}')
+        return std::max(100-i, 10);
+    if (text[i] == '\0')
+        return 1;
+    return 0;
+}
+
+
+static Difdef::Diff &slide_diff_windows(Difdef::Diff &d)
+{
+    /* As a special heuristic to produce nice merges for source code in
+     * curly-brace languages, let's try to make differing ranges end with
+     * curly braces; or, failing that, at least end with a blank line.
+     * TODO FIXME: There may be a way to generalize this kludge. */
+    const size_t N = d.lines.size();
+    size_t last_edge = 0;
+    for (size_t i=1; i < N; ++i) {
+        if (d.lines[i-1].mask == d.lines[i].mask)
+            continue;
+        /* There will be a directive inserted between i-1 and i. */
+        assert(d.lines[last_edge].mask == d.lines[i-1].mask);
+        if (last_edge != 0 && d.lines[last_edge-1].mask == d.lines[i].mask) {
+            mask_t inner_mask = d.lines[i-1].mask;
+            mask_t outer_mask = d.lines[i].mask;
+            /* We can slide both edges either direction, as long as the
+             * text matches. */
+            size_t window_down = 0;
+            size_t window_up = 0;
+            while (window_down < std::min(last_edge, i - last_edge) &&
+                   d.lines[last_edge-window_down-1].mask == outer_mask &&
+                   d.lines[last_edge-window_down-1].text == d.lines[i-window_down-1].text)
+                ++window_down;
+            while (window_up < std::min(N - i, i - last_edge) &&
+                   d.lines[i+window_up].mask == outer_mask &&
+                   d.lines[i+window_up].text == d.lines[last_edge+window_up].text)
+                ++window_up;
+            /* We have a "window" of (window_down + window_up) lines, inside
+             * which we can freely "slide" the differing range. Look for a
+             * right-curly-brace or blank line inside the window. */
+            int max_priority = 0;
+            size_t max_priority_edge = 0;
+            for (size_t j=0; j < window_down + window_up; ++j) {
+                const std::string &text = *d.lines[last_edge - window_down + j].text;
+                assert(text == *d.lines[i - window_down + j].text);
+                const int priority = diff_ending_priority(text.c_str());
+                if (priority > max_priority) {
+                    max_priority = priority;
+                    max_priority_edge = j+1;
+                }
+            }
+            for (size_t j=0; j < max_priority_edge; ++j) {
+                d.lines[i - window_down + j].mask = inner_mask;
+                d.lines[last_edge - window_down + j].mask = outer_mask;
+            }
+            for (size_t j = max_priority_edge; j < window_down + window_up; ++j) {
+                d.lines[i - window_down + j].mask = outer_mask;
+                d.lines[last_edge - window_down + j].mask = inner_mask;
+            }
+            last_edge = i - window_down + max_priority_edge;
+        } else {
+            last_edge = i;
+        }
+    }
+    
+    return d;
+}
+
+
 Difdef::Diff Difdef_impl::merge(unsigned int fmask) const
 {
-    assert((int)this->lines.size() == this->NUM_FILES);
+    assert(this->lines.size() == (size_t)this->NUM_FILES);
     assert(0 < this->NUM_FILES && this->NUM_FILES <= Difdef::MAX_FILES);
-    assert(fmask != 0u);
-    assert(fmask < (1u << this->NUM_FILES));
+    assert(fmask != 0);
+    assert(fmask < ((mask_t)1 << this->NUM_FILES));
 
     Diff d(this->NUM_FILES, 0);
     for (size_t i=0; i < this->lines.size(); ++i) {
         this->add_vec_to_diff(d, i, this->lines[i]);
     }
-    return d;
+    
+    return slide_diff_windows(d);
 }
+
 
 void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector<const std::string *> &b) const
 {

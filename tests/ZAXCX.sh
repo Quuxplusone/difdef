@@ -39,11 +39,11 @@ ab
 abvoid func1() {
 ab    x += 1;
 ab}
-ab
+ b
  bvoid threehalves() {
  b    x += 1.5;
  b}
- b
+ab
 abvoid func2() {
 ab    x += 2;
 ab}
