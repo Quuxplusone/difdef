@@ -1,5 +1,5 @@
 CXX = g++
-CFLAGS = -Ilibsrc -O -g -pg -W -Wall -Wextra -pedantic
+CFLAGS = -Ilibsrc -O3 -g -W -Wall -Wextra -pedantic
 
 all: difdef
 
