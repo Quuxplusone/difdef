@@ -63,10 +63,14 @@ struct Difdef_impl {
     const int NUM_FILES;  // set in constructor, read-only
     Difdef_StringSet unique_lines;
     std::vector<std::vector<const std::string *> > lines;
+    std::string (*filter)(const std::string &);
+
     typedef Difdef::Diff Diff;
     typedef Difdef::mask_t mask_t;
 
-    Difdef_impl(int num_files): NUM_FILES(num_files), unique_lines(num_files), lines(num_files) { }
+    Difdef_impl(int num_files):
+        NUM_FILES(num_files), unique_lines(num_files),
+        lines(num_files), filter(NULL) { }
 
     void replace_file(int fileid, FILE *in);
 

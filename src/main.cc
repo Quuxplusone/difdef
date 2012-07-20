@@ -53,12 +53,13 @@ static void do_help()
     puts("Usage: difdef [OPTION]... FILE1 [FILE2 FILE3]...");
     puts("Compare or merge multiple files.");
     puts("");
-    puts("  -u  -U NUM  --unified[=NUM]  Output NUM (default 3) lines of unified context.");
-    puts("  -D NAME     --ifdef=NAME     Output a single merged file using #ifdef syntax.");
-    puts("  --if=EXPR                    As above, but using arbitrary #if syntax.");
-    puts("  -D NAME=VALUE                Equivalent to --if=NAME==VALUE.");
-    puts("  -o  --output=FILE            Write result to FILE instead of standard output.");
-    puts("  -r  --recursive              Recursively compare subdirectories.");
+    puts("  -u -U NUM --unified[=NUM]  Output NUM (default 3) lines of unified context.");
+    puts("  -D NAME     --ifdef=NAME   Output a single merged file using #ifdef syntax.");
+    puts("  --if=EXPR                  As above, but using arbitrary #if syntax.");
+    puts("  -D NAME=VALUE              Equivalent to --if=NAME==VALUE.");
+    puts("  -o  --output=FILE          Write result to FILE instead of standard output.");
+    puts("  -r  --recursive            Recursively compare subdirectories.");
+    puts("  -t                         Expand tabs and strip trailing whitespace.");
     puts("");
     puts("  --help  Output this help.");
     puts("");
@@ -98,6 +99,25 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out)
 }
 
 
+static std::string do_normalize_whitespace(const std::string &line)
+{
+    size_t n = line.length();
+    bool has_trailing_whitespace = isspace(line[n-1]);
+    bool has_tabs = (strchr(line.c_str(), '\t') != NULL);
+    if (!has_tabs && !has_trailing_whitespace) {
+        return line;
+    } else {
+        for (--n; isspace(line[n-1]); --n) ;
+        std::string result(line, 0, n);
+        while (size_t tab = result.find('\t')+1) {
+            size_t tab_length = 8 - ((tab-1) % 8);
+            result.replace(tab-1, 1, tab_length, ' ');
+        }
+        return result;
+    }
+}
+
+
 int main(int argc, char **argv)
 {
     std::vector<std::string> user_defined_macro_names;
@@ -105,7 +125,8 @@ int main(int argc, char **argv)
     bool print_using_ifdefs = false;
     bool print_unified_diff = false;
     bool print_recursively = false;
-    int use_only_simple_ifs = true;
+    bool use_only_simple_ifs = true;
+    bool normalize_whitespace = false;
     size_t lines_of_context = 0;
 
     static const struct option longopts[] = {
@@ -122,7 +143,7 @@ int main(int argc, char **argv)
     int longopt_index;
     bool preceded_by_digit = false;
     size_t ocontext = -1;
-    while ((c = getopt_long(argc, argv, "0123456789D:o:ruU:", longopts, &longopt_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "0123456789D:o:rtuU:", longopts, &longopt_index)) != -1) {
         switch (c) {
             case 0:
                 if (!strcmp(longopts[longopt_index].name, "help")) {
@@ -171,6 +192,10 @@ int main(int argc, char **argv)
             }
             case 'r': {
                 print_recursively = true;
+                break;
+            }
+            case 't': {
+                normalize_whitespace = true;
                 break;
             }
             case 'U':
@@ -239,7 +264,12 @@ int main(int argc, char **argv)
     }
 
     Difdef difdef(num_files);
+    if (normalize_whitespace) {
+        difdef.set_filter(do_normalize_whitespace);
+    }
+
     std::vector<FileInfo> files(num_files);
+
     for (int i=0; i < num_files; ++i) {
         files[i].name = argv[optind + i];
         if (files[i].name == "-") {

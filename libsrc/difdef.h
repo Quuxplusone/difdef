@@ -35,6 +35,7 @@ class Difdef {
 
     Difdef(int num_files);  // Requires: 0 < num_files <= Difdef::MAX_FILES
     ~Difdef();
+    void set_filter(std::string (*filter)(const std::string &));
     void replace_file(int fileid, FILE *in);
 
     struct Diff;

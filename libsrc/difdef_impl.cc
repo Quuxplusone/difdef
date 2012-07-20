@@ -106,6 +106,11 @@ Difdef::~Difdef()
     delete this->impl;
 }
 
+void Difdef::set_filter(std::string (*filter)(const std::string &))
+{
+    this->impl->filter = filter;
+}
+
 void Difdef::replace_file(int fileid, FILE *in)
 {
     return this->impl->replace_file(fileid, in);
@@ -149,6 +154,8 @@ void Difdef_impl::replace_file(int fileid, FILE *in)
     if (in != NULL) {
         std::string line;
         while (getline(in, line)) {
+            if (this->filter != NULL)
+                line = this->filter(line);
             const std::string *s = this->unique_lines.add(fileid, line);
             this->lines[fileid].push_back(s);
         }
