@@ -30,7 +30,7 @@ int main()
 }
 EOF
 
-./diffn -DA a -DB b >out
+./difdef -DA a -DB b >out
 cat >expected <<EOF
 #ifdef A
 /*

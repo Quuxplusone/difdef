@@ -11,7 +11,7 @@ match1
 match2
 EOF
 
-./diffn a b >out
+./difdef a b >out
 cat >expected <<EOF
  b#if foo
 abmatch1
@@ -22,7 +22,7 @@ a #endif bar
 EOF
 diff expected out
 
-./diffn -DV1 -DV2 a b >out
+./difdef -DV1 -DV2 a b >out
 cat >expected <<EOF
 #ifdef V1
 match1

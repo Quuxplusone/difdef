@@ -20,7 +20,7 @@ uncommon2
 suffix
 EOF
 
-./diffn -DA -DB a b -o out
+./difdef -DA -DB a b -o out
 cat >expected <<EOF
 common
 prefix

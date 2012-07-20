@@ -21,7 +21,7 @@ cat >a/a-only/just-a.txt <<EOF
 just in a
 EOF
 
-./diffn -r -DA -DB a b -o out
+./difdef -r -DA -DB a b -o out
 
 cp -r a expected
 mkdir expected/b-only

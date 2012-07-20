@@ -23,7 +23,7 @@ int bar(void);
 #endif /* FOO */
 EOF
 
-./diffn -DA -DB a b >out
+./difdef -DA -DB a b >out
 cat >expected <<EOF
 #ifndef FOO
  #define FOO
@@ -43,7 +43,7 @@ int bar(void);
 EOF
 diff expected out
 
-./diffn -DB -DA b a >out
+./difdef -DB -DA b a >out
 diff expected out
 
 rm -f a b expected out

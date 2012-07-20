@@ -19,7 +19,7 @@ common
 suffix
 EOF
 
-./diffn -DA -DB a b >out
+./difdef -DA -DB a b >out
 cat >expected <<EOF
 common
 prefix

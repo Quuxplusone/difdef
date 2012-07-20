@@ -10,7 +10,7 @@ bar
 baz
 EOF
 
-./diffn --if=A --if=B a b -o out
+./difdef --if=A --if=B a b -o out
 cat >expected <<EOF
 prefix
 #if A
@@ -23,7 +23,7 @@ baz
 EOF
 diff expected out
 
-./diffn --ifdef=A --ifdef=B a b -o out
+./difdef --ifdef=A --ifdef=B a b -o out
 cat >expected <<EOF
 prefix
 #ifdef A
@@ -35,7 +35,7 @@ baz
 #endif /* B */
 EOF
 diff expected out
-./diffn -DA -DB a b -o out
+./difdef -DA -DB a b -o out
 diff expected out
 
 rm -f a b expected out

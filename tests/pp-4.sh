@@ -33,7 +33,7 @@ still common  // should be merged
 suffix
 EOF
 
-./diffn a b >out
+./difdef a b >out
 cat >expected <<EOF
 abcommon
 abprefix
@@ -55,7 +55,7 @@ absuffix
 EOF
 diff expected out
 
-./diffn -DV1 -DV2 a b >out
+./difdef -DV1 -DV2 a b >out
 cat >expected <<EOF
 common
 prefix
@@ -87,7 +87,7 @@ suffix
 EOF
 diff expected out
 
-./diffn -DV2 -DV1 b a >out
+./difdef -DV2 -DV1 b a >out
 cat >expected <<EOF
 common
 prefix

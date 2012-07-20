@@ -44,7 +44,7 @@ baz
 more common suffix
 EOF
 
-./diffn -DV1 -DV2 -DV3 a b c >out
+./difdef -DV1 -DV2 -DV3 a b c >out
 cat >expected <<EOF
 #if COMMON  // should merge
 common

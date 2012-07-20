@@ -19,7 +19,7 @@ void the_cell_phone();
 EOF
 cp c d
 
-./diffn -Da a -Db b -Dc c -Dd d -o out
+./difdef -Da a -Db b -Dc c -Dd d -o out
 cat >expected <<EOF
 #include <stdio.h>
 
@@ -38,7 +38,7 @@ void the_cell_phone();
 EOF
 diff expected out
 
-./diffn -Da a -Dc c -Db b -Dd d -o out
+./difdef -Da a -Dc c -Db b -Dd d -o out
 diff expected out
 
 rm -f a b c d expected out

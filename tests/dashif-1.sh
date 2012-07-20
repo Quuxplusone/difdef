@@ -10,7 +10,7 @@ bar
 baz
 EOF
 
-./diffn --if=HOST==A --if=HOST==B a b -o out
+./difdef --if=HOST==A --if=HOST==B a b -o out
 cat >expected <<EOF
 prefix
 #if HOST==A

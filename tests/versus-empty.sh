@@ -5,7 +5,7 @@ baz
 EOF
 touch b
 
-./diffn a b >out
+./difdef a b >out
 cat >expected <<EOF
 a foo
 a bar
@@ -13,7 +13,7 @@ a baz
 EOF
 diff expected out
 
-./diffn b a >out
+./difdef b a >out
 cat >expected <<EOF
  bfoo
  bbar
@@ -21,7 +21,7 @@ cat >expected <<EOF
 EOF
 diff expected out
 
-./diffn -DV1 -DV2 a b >out
+./difdef -DV1 -DV2 a b >out
 cat >expected <<EOF
 #ifdef V1
 foo
@@ -31,7 +31,7 @@ baz
 EOF
 diff expected out
 
-./diffn -DV1 -DV2 b a >out
+./difdef -DV1 -DV2 b a >out
 cat >expected <<EOF
 #ifdef V2
 foo

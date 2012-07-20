@@ -30,7 +30,7 @@ void func2() {
 
 EOF
 
-./diffn a b >out
+./difdef a b >out
 cat >expected <<EOF
 ab#include <stdio.h>
 ab#include <stdlib.h>
@@ -51,7 +51,7 @@ ab
 EOF
 diff expected out
 
-./diffn -DV1 -DV2 a b >out
+./difdef -DV1 -DV2 a b >out
 cat >expected <<EOF
 #include <stdio.h>
 #include <stdlib.h>

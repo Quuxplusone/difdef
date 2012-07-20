@@ -1,9 +1,9 @@
 touch empty
 
-./diffn empty empty >out
+./difdef empty empty >out
 diff empty out
 
-./diffn -DV1 -DV2 empty empty >out
+./difdef -DV1 -DV2 empty empty >out
 diff empty out
 
 rm -f empty out
@@ -14,7 +14,7 @@ touch a/empty
 touch b/empty
 echo "foo" > a/nonempty-v-empty
 touch b/nonempty-v-empty
-./diffn -r -DV1 -DV2 a b -o out
+./difdef -r -DV1 -DV2 a b -o out
 if [ ! -r out/empty ]; then
     echo "out/empty should exist, but doesn't"
 fi

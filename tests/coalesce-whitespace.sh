@@ -16,7 +16,7 @@ void bar();
 
 EOF
 
-./diffn a b >out
+./difdef a b >out
 cat >expected <<EOF
 ab
 abvoid foo();
@@ -28,7 +28,7 @@ ab
 EOF
 diff --brief expected out
 
-./diffn -DV1 -DV2 a b >out
+./difdef -DV1 -DV2 a b >out
 diff --brief a out
 
 cat >c <<EOF
@@ -39,7 +39,7 @@ void baz();
 void bar();
 EOF
 
-./diffn -DV1 -DV2 -DV3 a b c >out
+./difdef -DV1 -DV2 -DV3 a b c >out
 cat >expected <<EOF
 void foo();
 

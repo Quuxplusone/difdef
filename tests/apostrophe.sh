@@ -12,7 +12,7 @@ int different2;
 #pragma mark Something else
 EOF
 
-./diffn a b >out
+./difdef a b >out
 cat >expected <<EOF
 abint common;
 ab#pragma mark This isn't a character literal
@@ -22,7 +22,7 @@ ab#pragma mark Something else
 EOF
 diff expected out
 
-./diffn -DA -DB a b >out
+./difdef -DA -DB a b >out
 cat >expected <<EOF
 int common;
 #pragma mark This isn't a character literal

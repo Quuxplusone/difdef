@@ -7,7 +7,7 @@ bar
 foo
 EOF
 
-./diffn a b -o out
+./difdef a b -o out
 cat >expected <<EOF
 a foo
 abbar
@@ -15,7 +15,7 @@ abbar
 EOF
 diff expected out
 
-./diffn -DV1 -DV2 a b -o out
+./difdef -DV1 -DV2 a b -o out
 cat >expected <<EOF
 #ifdef V1
 foo

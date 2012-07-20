@@ -11,7 +11,7 @@ cat >b <<EOF
 #endif // foo bar
   baz
 EOF
-./diffn -DA -DB a b >out
+./difdef -DA -DB a b >out
 cat >expected <<EOF
 #if SOMETHING
   foo

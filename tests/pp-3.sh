@@ -17,7 +17,7 @@ common
 suffix
 EOF
 
-./diffn --if=A --if=B a b >out
+./difdef --if=A --if=B a b >out
 cat >expected <<EOF
 #if A
 uncommon

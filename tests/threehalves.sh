@@ -25,7 +25,7 @@ void func2() {
 
 EOF
 
-./diffn a b >out
+./difdef a b >out
 cat >expected <<EOF
 ab
 abvoid func1() {
@@ -43,7 +43,7 @@ ab
 EOF
 diff expected out
 
-./diffn -DV1 -DV2 a b >out
+./difdef -DV1 -DV2 a b >out
 cat >expected <<EOF
 
 void func1() {

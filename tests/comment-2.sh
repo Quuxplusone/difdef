@@ -34,7 +34,7 @@ world");
 }
 EOF
 
-./diffn -DA -DB -DC a b c -o out
+./difdef -DA -DB -DC a b c -o out
 cat >expected <<EOF
 
 #include <stdio.h>

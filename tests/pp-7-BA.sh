@@ -9,7 +9,7 @@ cat >b <<EOF
 #endif A
 EOF
 
-./diffn a b >out
+./difdef a b >out
 cat >expected <<EOF
 a #if A
 ab#if B
@@ -18,7 +18,7 @@ ab#endif A
 EOF
 diff expected out
 
-./diffn -DV1 -DV2 a b >out
+./difdef -DV1 -DV2 a b >out
 cat >expected <<EOF
 #ifdef V1
 #if A

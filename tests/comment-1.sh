@@ -7,14 +7,14 @@ cat >b <<EOF
    brown fox */
 EOF
 
-./diffn a b -o out
+./difdef a b -o out
 cat >expected <<EOF
 ab/* the quick
 ab   brown fox */
 EOF
 diff expected out
 
-./diffn -DA -DB a b -o out
+./difdef -DA -DB a b -o out
 diff a out
 
 cat >b <<EOF
@@ -22,7 +22,7 @@ cat >b <<EOF
    brown fox */
 EOF
 
-./diffn a b -o out
+./difdef a b -o out
 cat >expected <<EOF
 a /* the quick
  b/* the fast
@@ -30,7 +30,7 @@ ab   brown fox */
 EOF
 diff expected out
 
-./diffn -DA -DB a b -o out
+./difdef -DA -DB a b -o out
 cat >expected <<EOF
 #ifdef A
 /* the quick
@@ -48,7 +48,7 @@ cat >b <<EOF
    red fox */
 EOF
 
-./diffn a b -o out
+./difdef a b -o out
 cat >expected <<EOF
 ab/* the quick
 a    brown fox */
@@ -56,7 +56,7 @@ a    brown fox */
 EOF
 diff expected out
 
-./diffn -DA -DB a b -o out
+./difdef -DA -DB a b -o out
 cat >expected <<EOF
 #ifdef A
 /* the quick

@@ -50,7 +50,7 @@ void do_error(const char *fmt, ...)
 
 static void do_help()
 {
-    puts("Usage: diffn [OPTION]... FILE1 [FILE2 FILE3]...");
+    puts("Usage: difdef [OPTION]... FILE1 [FILE2 FILE3]...");
     puts("Compare or merge multiple files.");
     puts("");
     puts("  -u  -U NUM  --unified[=NUM]  Output NUM (default 3) lines of unified context.");
@@ -67,7 +67,7 @@ static void do_help()
     printf("In \"ifdef\" mode, you may supply 1 <= N <= %d files to merge. The number\n",
         (int)Difdef::MAX_FILES);
     puts("of files must be equal to the number of -D options. In recursive ifdef mode,");
-    puts("you must also supply an output directory name with -o; diffn will duplicate");
+    puts("you must also supply an output directory name with -o; difdef will duplicate");
     puts("the structure of the input directories in that output directory.");
     printf("In \"raw\" mode (the default), you may supply 1 <= N <= %d files to merge.\n",
         (int)Difdef::MAX_FILES);
@@ -274,7 +274,7 @@ int main(int argc, char **argv)
     }
 
     if (print_using_ifdefs && print_recursively) {
-        /* If we're doing "diffn -r", then files[] is populated with
+        /* If we're doing "difdef -r", then files[] is populated with
          * open file descriptors for all the input directories. */
         assert(output_filename != NULL);        
         do_print_ifdefs_recursively(files, user_defined_macro_names,
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
     } else if (print_unified_diff && print_recursively) {
         do_error("Not implemented yet -- TODO FIXME BUG HACK");
     } else {
-        /* If we're doing "diffn" without "-r", difdef is populated. */
+        /* If we're doing "difdef" without "-r", difdef is populated. */
         Difdef::Diff diff = difdef.merge();
     
         /* Try to open the output file. */

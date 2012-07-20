@@ -1,5 +1,5 @@
-make diffn
-cp ./diffn ./tests/
+make difdef
+cp ./difdef ./tests/
 cd tests
 SAW_ERRORS=false
 for test in *.sh; do
@@ -9,7 +9,7 @@ for test in *.sh; do
     SAW_ERRORS=true
   fi
 done
-rm -f diffn OUTPUT
+rm -f difdef OUTPUT
 if $SAW_ERRORS; then
   echo "====Some tests failed!===="
 fi

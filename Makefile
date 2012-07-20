@@ -1,9 +1,9 @@
 CXX = g++
-CFLAGS = -Ilibsrc -O3 -W -Wall -Wextra -pedantic
+CFLAGS = -Ilibsrc -O -g -pg -W -Wall -Wextra -pedantic
 
-all: diffn
+all: difdef
 
-diffn: main.o ifdefs.o recurse.o unified.o verify.o difdef_impl.o getline.o
+difdef: main.o ifdefs.o recurse.o unified.o verify.o difdef_impl.o getline.o
 	$(CXX) $(CFLAGS) $^ -o $@
 
 difdef_impl.o: libsrc/difdef_impl.cc libsrc/patience.cc libsrc/classical.cc
@@ -16,4 +16,4 @@ getline.o: libsrc/getline.cc
 	$(CXX) $(CFLAGS) -c $^ -o $@
 
 clean:
-	rm -f *.o diffn
+	rm -f *.o difdef

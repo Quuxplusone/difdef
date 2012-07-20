@@ -5,7 +5,7 @@ cat >b <<EOF
 bar
 EOF
 
-./diffn --simple -DA a -DB b >out
+./difdef --simple -DA a -DB b >out
 cat >expected <<EOF
 #ifdef A
 foo
@@ -16,7 +16,7 @@ bar
 EOF
 diff expected out
 
-./diffn --complex -DA a -DB b >out
+./difdef --complex -DA a -DB b >out
 cat >expected <<EOF
 #ifdef A
 foo
@@ -27,7 +27,7 @@ EOF
 diff expected out
 
 touch c
-./diffn --complex -DA a -DB b -DC c >out
+./difdef --complex -DA a -DB b -DC c >out
 cat >expected <<EOF
 #ifdef A
 foo

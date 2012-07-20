@@ -12,7 +12,7 @@ int prefix;
 int suffix;
 EOF
 
-./diffn -DA a -DB b >out
+./difdef -DA a -DB b >out
 cat >expected <<EOF
 int prefix;
 #ifdef A

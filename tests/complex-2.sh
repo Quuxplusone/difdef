@@ -9,7 +9,7 @@ cat >c <<EOF
 baz
 EOF
 
-./diffn --simple -DA a -DB b -DC c >out
+./difdef --simple -DA a -DB b -DC c >out
 cat >expected <<EOF
 #if defined(A) || defined(B)
 foo
@@ -23,7 +23,7 @@ baz
 EOF
 diff expected out
 
-./diffn --complex -DA a -DB b -DC c >out
+./difdef --complex -DA a -DB b -DC c >out
 cat >expected <<EOF
 #if defined(A) || defined(B)
 foo

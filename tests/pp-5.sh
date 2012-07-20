@@ -20,7 +20,7 @@ common
 suffix
 EOF
 
-./diffn -DV1 -DV2 a b >out
+./difdef -DV1 -DV2 a b >out
 cat >expected <<EOF
 common
 prefix
@@ -36,7 +36,7 @@ suffix
 EOF
 diff expected out
 
-./diffn -DV2 -DV1 b a >out
+./difdef -DV2 -DV1 b a >out
 diff expected out
 
 rm -f a b expected out
