@@ -22,12 +22,11 @@ struct CStateMachine {
         in_char = false;
     }
     void update(const std::string &line_) {
-        in_backslash = false;
         const char *line = line_.c_str();
+        in_backslash = false;
         for (int i=0; line[i] != '\0'; ++i) {
             if (line[i] == '\\' && line[i+1] == '\0') {
-                in_backslash = true;
-                return;
+                return backslash(line);
             } else if (in_string) {
                 if (line[i] == '\\') ++i;
                 else if (line[i] == '"') in_string = false;
@@ -44,16 +43,27 @@ struct CStateMachine {
                     ++i;
                     in_comment = true;
                 } else if (line[i] == '/' && line[i+1] == '/') {
-                    const char *end = strchr(line, '\0');
-                    if (end != line && end[-1] == '\\')
-                        in_backslash = true;
-                    return;
+                    return backslash(line);
                 } else if (line[i] == '"') {
                     in_string = true;
                 } else if (line[i] == '\'') {
                     in_char = true;
                 }
             }
+        }
+        return backslash(line);
+    }
+    void backslash(const char *line) {
+        const char *end = strchr(line, '\0');
+        in_backslash = (end != line && end[-1] == '\\');
+        if (!in_backslash) {
+            /* Resync better when processing not-quite-C input, such as
+             *     #pragma mark Typedef'd structures
+             * or
+             *     $foo =~ /Perl isn't C/;
+             */
+            in_string = false;
+            in_char = false;
         }
     }
 };

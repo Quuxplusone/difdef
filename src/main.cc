@@ -105,13 +105,16 @@ int main(int argc, char **argv)
     bool print_using_ifdefs = false;
     bool print_unified_diff = false;
     bool print_recursively = false;
+    int use_only_simple_ifs = true;
     size_t lines_of_context = 0;
 
     static const struct option longopts[] = {
+        { "complex", no_argument, NULL, 0 },
         { "if", required_argument, NULL, 0 },
         { "ifdef", required_argument, NULL, 'D' },
         { "output", required_argument, NULL, 'o' },
         { "recursive", no_argument, NULL, 'r' },
+        { "simple", no_argument, NULL, 0 },
         { "unified", no_argument, NULL, 'u' },
         { "help", no_argument, NULL, 0 },
     };
@@ -128,6 +131,10 @@ int main(int argc, char **argv)
                     print_using_ifdefs = true;
                     assert(optarg != NULL);
                     user_defined_macro_names.push_back(optarg);
+                } else if (!strcmp(longopts[longopt_index].name, "complex")) {
+                    use_only_simple_ifs = false;
+                } else if (!strcmp(longopts[longopt_index].name, "simple")) {
+                    use_only_simple_ifs = true;
                 } else {
                     assert(false);
                 }
@@ -270,7 +277,8 @@ int main(int argc, char **argv)
         /* If we're doing "diffn -r", then files[] is populated with
          * open file descriptors for all the input directories. */
         assert(output_filename != NULL);        
-        do_print_ifdefs_recursively(files, user_defined_macro_names, output_filename);
+        do_print_ifdefs_recursively(files, user_defined_macro_names,
+                                    use_only_simple_ifs, output_filename);
     } else if (print_unified_diff && print_recursively) {
         do_error("Not implemented yet -- TODO FIXME BUG HACK");
     } else {
@@ -295,7 +303,8 @@ int main(int argc, char **argv)
             do_print_unified_diff(diff, &files[0], lines_of_context, out);
         } else if (print_using_ifdefs) {
             verify_properly_nested_directives(diff, &files[0]);
-            do_print_using_ifdefs(diff, user_defined_macro_names, out);
+            do_print_using_ifdefs(diff, user_defined_macro_names,
+                                  use_only_simple_ifs, out);
         } else {
             do_print_multicolumn(diff, out);
         }

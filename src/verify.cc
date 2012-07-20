@@ -111,10 +111,6 @@ void verify_properly_nested_directives(const Difdef::Diff &diff, const FileInfo 
             do_error("at end of file %s: expected #endif", filename);
         } else if (state_machines[v].in_comment) {
             do_error("at end of file %s: unterminated comment", filename);
-        } else if (state_machines[v].in_string) {
-            do_error("at end of file %s: unterminated string literal", filename);
-        } else if (state_machines[v].in_char) {
-            do_error("at end of file %s: unterminated character literal", filename);
         }
     }
 }

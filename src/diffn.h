@@ -46,9 +46,11 @@ bool opens_comment(const std::string &s);
 bool closes_comment(const std::string &s);
 void do_print_using_ifdefs(const Difdef::Diff &diff,
                            const std::vector<std::string> &macro_names,
+                           bool use_only_simple_ifs,
                            FILE *out);
 void do_print_ifdefs_recursively(std::vector<FileInfo> &files,
                                  const std::vector<std::string> &macro_names,
+                                 bool use_only_simple_ifs,
                                  const std::string &output_name);
 void do_print_unified_diff(const Difdef::Diff &diff,
                            const FileInfo files[],

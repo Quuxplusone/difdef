@@ -33,6 +33,7 @@
 
 void do_print_ifdefs_recursively(std::vector<FileInfo> &files,
                                  const std::vector<std::string> &macro_names,
+                                 bool use_only_simple_ifs,
                                  const std::string &output_name)
 {
     const size_t num_files = files.size();
@@ -89,7 +90,7 @@ void do_print_ifdefs_recursively(std::vector<FileInfo> &files,
 
         /* Print out the diff. */
         verify_properly_nested_directives(diff, &files[0]);
-        do_print_using_ifdefs(diff, macro_names, out);
+        do_print_using_ifdefs(diff, macro_names, use_only_simple_ifs, out);
         fclose(out);
 
     } else {
@@ -117,7 +118,8 @@ void do_print_ifdefs_recursively(std::vector<FileInfo> &files,
                     subfiles[j].name = files[j].name + "/" + relative_name;
                 }
                 std::string suboutput_name = output_name + "/" + relative_name;
-                do_print_ifdefs_recursively(subfiles, macro_names, suboutput_name);
+                do_print_ifdefs_recursively(subfiles, macro_names, use_only_simple_ifs,
+                                            suboutput_name);
             }
         }
     }

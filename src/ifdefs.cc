@@ -35,7 +35,18 @@
 typedef Difdef::mask_t mask_t;
 
 
-static void emit_ifdef(mask_t mask, const std::vector<std::string> &macro_names, FILE *out)
+static bool contains(mask_t mortals, mask_t men)
+{
+    return ((mortals & men) == men);
+}
+
+static bool disjoint(mask_t mortals, mask_t gods)
+{
+    return ((mortals & gods) == 0);
+}
+
+static void emit_ifdef(mask_t mask,
+                       const std::vector<std::string> &macro_names, FILE *out)
 {
     assert(mask != 0u);
     bool first = true;
@@ -69,13 +80,43 @@ static void emit_ifdef(mask_t mask, const std::vector<std::string> &macro_names,
 }
 
 
-static void emit_endif(mask_t mask, const std::vector<std::string> &macro_names, FILE *out)
+static void emit_elif(mask_t mask,
+                      const std::vector<std::string> &macro_names, FILE *out)
 {
-    assert(mask != 0);
-    fprintf(out, "#endif /* ");
+    assert(mask != 0u);
+    bool first = true;
+    for (int i = 0; i < Difdef::MAX_FILES; ++i) {
+        mask_t bit_i = (mask_t)1 << i;
+        if ((mask & bit_i) == 0)
+            continue;
+        assert((size_t)i < macro_names.size());
+        const bool builtin = !strncmp(macro_names[i].c_str(), BUILTIN_DEFINE, BUILTIN_DEFINE_LEN);
+        if (first) {
+            fprintf(out, "#elif ");
+        } else {
+            fprintf(out, " || ");
+        }
+        if (builtin) {
+            fprintf(out, "defined(%s)", macro_names[i].c_str() + BUILTIN_DEFINE_LEN);
+        } else {
+            /* Notice that we do not parenthesize subexpressions. */
+            fprintf(out, "%s", macro_names[i].c_str());
+        }
+        first = false;
+    }
+    assert(!first);
+    fprintf(out, "\n");
+}
+
+
+static void emit_else(mask_t mask,
+                      const std::vector<std::string> &macro_names, FILE *out)
+{
+    fprintf(out, "#else /* ");
     bool first = true;
     for (int i = 0; i < 31; ++i) {
-        if (mask & ((mask_t)1 << i)) {
+        const mask_t bit_i = (mask_t)1 << i;
+        if (contains(mask, bit_i)) {
             const bool builtin = !strncmp(macro_names[i].c_str(), BUILTIN_DEFINE, BUILTIN_DEFINE_LEN);
             if (!first) fprintf(out, " || ");
             if (builtin) {
@@ -88,6 +129,50 @@ static void emit_endif(mask_t mask, const std::vector<std::string> &macro_names,
     }
     assert(!first);
     fprintf(out, " */\n");
+}
+
+
+static void emit_endif(mask_t ifmask, mask_t elsemask, mask_t allmask,
+                       const std::vector<std::string> &macro_names, FILE *out)
+{
+    assert(contains(allmask, ifmask));
+    assert(contains(allmask, elsemask));
+    assert(disjoint(ifmask, elsemask));
+    std::string comment_string = "";
+    bool first = true;
+    bool just_print_variable_name = ((ifmask | elsemask) == allmask);
+    std::string variable_name;
+    for (int i = 0; i < 31; ++i) {
+        const mask_t bit_i = (mask_t)1 << i;
+        if (contains(ifmask | elsemask, bit_i)) {
+            const char *name = macro_names[i].c_str();
+            const bool builtin = !strncmp(name, BUILTIN_DEFINE, BUILTIN_DEFINE_LEN);
+            if (!first) comment_string += " || ";
+            if (builtin) {
+                comment_string += (name + BUILTIN_DEFINE_LEN);
+                just_print_variable_name = false;
+            } else {
+                comment_string += name;
+                if (first) {
+                    const char *equals = strstr(name, "==");
+                    if (equals != NULL) {
+                        variable_name = std::string(name, equals+2 - name);
+                    } else {
+                        just_print_variable_name = false;
+                    }
+                } else if (just_print_variable_name &&
+                           0 != strncmp(name, variable_name.c_str(), variable_name.length())) {
+                    just_print_variable_name = false;
+                }
+            }
+            first = false;
+        }
+    }
+    assert(!first);
+    if (just_print_variable_name) {
+        comment_string = std::string(variable_name, 0, variable_name.length() - 2);
+    }
+    fprintf(out, "#endif /* %s */\n", comment_string.c_str());
 }
 
 
@@ -128,7 +213,7 @@ static void coalesce_endifs(Difdef::Diff &diff)
             continue;
         
         const mask_t next_block_mask = diff.lines[i+1].mask;
-        if ((diff.lines[i].mask & next_block_mask) != 0) {
+        if (!disjoint(diff.lines[i].mask, next_block_mask)) {
             /* We're looking for mutually exclusive blocks. */
             continue;
         }
@@ -177,8 +262,7 @@ static void split_if_elif_ranges_by_version(Difdef::Diff &diff)
         std::vector<std::stack<char> > nest(diff.dimension);
         std::vector<CStateMachine> state_machines(diff.dimension);
         for (size_t j = i; j < diff.lines.size(); ++j) {
-            if (diff.lines[j].mask & ~desired_mask) {
-                /* This line's mask is NOT a subset of the desired mask. */
+            if (!contains(desired_mask, diff.lines[j].mask)) {
                 need_to_split = true;
             }
             const std::string &text = *diff.lines[j].text;
@@ -287,7 +371,7 @@ static void collapse_blank_lines(Difdef::Diff &diff)
         if (startmask == endmask) {
             /* Preserve these blank lines; they don't border an #ifdef. */
             for (size_t j = i; j < end; ++j) {
-                if ((diff.lines[j].mask & startmask) == startmask) {
+                if (contains(diff.lines[j].mask, startmask)) {
                     /* This blank line appears in a superset of startmask. */
                     ++blank_lines_we_still_want;
                 }
@@ -308,6 +392,7 @@ static void collapse_blank_lines(Difdef::Diff &diff)
 
 void do_print_using_ifdefs(const Difdef::Diff &diff_,
                            const std::vector<std::string> &macro_names,
+                           bool use_only_simple_ifs,
                            FILE *out)
 {
     Difdef::Diff diff(diff_);
@@ -316,27 +401,61 @@ void do_print_using_ifdefs(const Difdef::Diff &diff_,
     split_if_elif_ranges_by_version(diff);
     collapse_blank_lines(diff);
 
-    std::vector<mask_t> maskstack;
-    maskstack.push_back(diff.all_files_mask());
+    std::vector<mask_t> ifstack;
+    std::vector<mask_t> elsestack;
+    ifstack.push_back(diff.all_files_mask());
+    elsestack.push_back(0);
+
     for (size_t i=0; i < diff.lines.size(); ++i) {
         const Difdef::Diff::Line &line = diff.lines[i];
-        const mask_t mask = line.mask;
-        while ((mask & maskstack.back()) != mask) {
-            // current mask is not yet a superset of mask; keep looking backward
-            emit_endif(maskstack.back(), macro_names, out);
-            maskstack.resize(maskstack.size()-1);
-            assert(!maskstack.empty());
+        const mask_t new_mask = line.mask;
+        /* Find the nearest enclosing #if-block whose mask is a superset
+         * of new_mask. There must be one, even if we have to go all the
+         * way back up to the top level. */
+        while (!contains(ifstack.back(), new_mask)) {
+            /* Current mask is not yet a superset of new_mask. */
+            assert(ifstack.size() >= 2);
+            mask_t next_higher_mask = ifstack[ifstack.size()-2];
+            assert(contains(next_higher_mask, ifstack.back()));
+            assert(contains(next_higher_mask, elsestack.back()));
+            assert(disjoint(ifstack.back(), elsestack.back()));
+            if (contains(next_higher_mask, new_mask)) {
+                /* This #if-block is no good, but the next higher one
+                 * will be accepted. Maybe we can use an #elif or #else
+                 * instead of an #endif/#if pair. */
+                if (use_only_simple_ifs) {
+                    /* We don't use #elses. */
+                } else if (!disjoint(ifstack.back() | elsestack.back(), new_mask)) {
+                    /* We've already dealt with one of the versions. */
+                } else {
+                    elsestack.back() |= ifstack.back();
+                    ifstack.back() = new_mask;
+                    if (elsestack.back() == (next_higher_mask & ~new_mask)) {
+                        emit_else(new_mask, macro_names, out);
+                    } else {
+                        emit_elif(new_mask, macro_names, out);
+                    }
+                    break;
+                }
+            }
+            emit_endif(ifstack.back(), elsestack.back(),
+                       diff.all_files_mask(), macro_names, out);
+            ifstack.resize(ifstack.size()-1);
+            elsestack.resize(elsestack.size()-1);
+            assert(!ifstack.empty());
+            assert(ifstack.size() == elsestack.size());
         }
-        if (mask != maskstack.back()) {
-            maskstack.push_back(mask);
-            emit_ifdef(mask, macro_names, out);
+        if (new_mask != ifstack.back()) {
+            ifstack.push_back(new_mask);
+            elsestack.push_back(0);
+            emit_ifdef(new_mask, macro_names, out);
         }
         fprintf(out, "%s\n", line.text->c_str());
     }
-    assert(maskstack.size() >= 1);
-    while (maskstack.size() != 1) {
-        emit_endif(maskstack.back(), macro_names, out);
-        maskstack.resize(maskstack.size()-1);
+    assert(ifstack.size() >= 1);
+    for (size_t k = ifstack.size(); k > 1; --k) {
+        emit_endif(ifstack[k-1], elsestack[k-1],
+                   diff.all_files_mask(), macro_names, out);
     }
 }
 
