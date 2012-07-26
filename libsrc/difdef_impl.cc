@@ -180,6 +180,12 @@ static int diff_ending_priority(const char *text)
 }
 
 
+static inline bool contains(mask_t mortals, mask_t men)
+{
+    return !(men & ~mortals);
+}
+
+
 static Difdef::Diff &slide_diff_windows(Difdef::Diff &d)
 {
     /* As a special heuristic to produce nice merges for source code in
@@ -193,9 +199,9 @@ static Difdef::Diff &slide_diff_windows(Difdef::Diff &d)
             continue;
         /* There will be a directive inserted between i-1 and i. */
         assert(d.lines[last_edge].mask == d.lines[i-1].mask);
-        if (last_edge != 0 && d.lines[last_edge-1].mask == d.lines[i].mask) {
-            mask_t inner_mask = d.lines[i-1].mask;
-            mask_t outer_mask = d.lines[i].mask;
+        mask_t inner_mask = d.lines[i-1].mask;
+        mask_t outer_mask = d.lines[i].mask;
+        if (last_edge != 0 && d.lines[last_edge-1].mask == outer_mask && contains(outer_mask, inner_mask)) {
             /* We can slide both edges either direction, as long as the
              * text matches. */
             size_t window_down = 0;
@@ -231,6 +237,9 @@ static Difdef::Diff &slide_diff_windows(Difdef::Diff &d)
                 d.lines[last_edge - window_down + j].mask = inner_mask;
             }
             last_edge = i - window_down + max_priority_edge;
+            assert(last_edge == 0 || d.lines[last_edge-1].mask == inner_mask);
+            assert(d.lines[last_edge].mask == outer_mask);
+            i = std::max(last_edge, i+window_up-1);
         } else {
             last_edge = i;
         }

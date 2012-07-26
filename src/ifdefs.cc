@@ -37,12 +37,12 @@ typedef Difdef::mask_t mask_t;
 
 static bool contains(mask_t mortals, mask_t men)
 {
-    return ((mortals & men) == men);
+    return !(men & ~mortals);
 }
 
 static bool disjoint(mask_t mortals, mask_t gods)
 {
-    return ((mortals & gods) == 0);
+    return !(mortals & gods);
 }
 
 static void emit_ifdef(mask_t mask,
