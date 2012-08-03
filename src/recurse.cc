@@ -104,7 +104,9 @@ void do_print_ifdefs_recursively(std::vector<FileInfo> &files,
         for (size_t i=0; i < num_files; ++i) {
             if (files[i].fp == NULL)
                 continue;
+            fclose(files[i].fp);
             DIR *dir = opendir(files[i].name.c_str());
+            assert(dir != NULL);
             while (struct dirent *file = readdir(dir)) {
                 std::string relative_name = file->d_name;
                 if (processed_filenames.find(relative_name) != processed_filenames.end()) {
@@ -121,6 +123,7 @@ void do_print_ifdefs_recursively(std::vector<FileInfo> &files,
                 do_print_ifdefs_recursively(subfiles, macro_names, use_only_simple_ifs,
                                             suboutput_name);
             }
+            closedir(dir);
         }
     }
 }
