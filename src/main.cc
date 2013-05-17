@@ -55,8 +55,9 @@ static void do_help()
     puts("");
     puts("  -u -U NUM --unified[=NUM]  Output NUM (default 3) lines of unified context.");
     puts("  -D NAME     --ifdef=NAME   Output a single merged file using #ifdef syntax.");
-    puts("  --if=EXPR                  As above, but using arbitrary #if syntax.");
-    puts("  -D NAME=VALUE              Equivalent to --if=NAME==VALUE.");
+    puts("  --if EXPR                  As above, but using arbitrary #if syntax.");
+    puts("  -D NAME=VALUE              Equivalent to --if NAME==VALUE.");
+    puts("      --complex (--simple)   Use (do not use) #elif and #else constructs.");
     puts("  -o  --output=FILE          Write result to FILE instead of standard output.");
     puts("  -r  --recursive            Recursively compare subdirectories.");
     puts("  -t                         Expand tabs and strip trailing whitespace.");
