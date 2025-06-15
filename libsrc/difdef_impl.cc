@@ -60,6 +60,11 @@ Difdef::Diff &Difdef::Diff::operator = (const Difdef::Diff &rhs)
     return *this;
 }
 
+Difdef::Diff::Diff(const Difdef::Diff &rhs): Difdef::Diff::Diff(rhs.dimension, rhs.mask)
+{
+        this->lines = rhs.lines;
+}
+
 void Difdef::Diff::append(const Difdef::Diff &rhs)
 {
     assert(this->dimension == rhs.dimension);

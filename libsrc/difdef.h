@@ -60,6 +60,7 @@ class Difdef {
         std::vector<Line> lines;
 
         Diff &operator = (const Diff &rhs);
+        Diff(const Diff&);
         bool includes_file(int fileid) const;
         mask_t all_files_mask() const;
 

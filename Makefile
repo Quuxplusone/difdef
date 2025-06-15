@@ -17,3 +17,13 @@ getline.o: libsrc/getline.cc
 
 clean:
 	rm -f *.o difdef
+
+check: difdef
+	./run-tests.sh
+
+install:
+	mkdir -p "$(PREFIX)"/{bin,share/doc/difdef}
+	cp difdef "$(PREFIX)/bin"
+	cp README LICENSE  "$(PREFIX)/share/doc/difdef"
+
+.PHONY: all clean check install
