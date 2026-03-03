@@ -115,7 +115,7 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out, int use_co
             putc((line.in_file(j) ? alphabet[j] : ' '), out);
         }
         if (get_use_colors(use_colors, out)) {
-            fputs(TERM_RESET, out);
+            fputs(COLOR_RESET, out);
         }
         if (use_separator) {
             fputs(box_drawing_vertical, out);
@@ -137,7 +137,7 @@ static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out, int us
         }
     }
     if (get_use_colors(use_colors, out)) {
-        fputs(TERM_RESET, out);
+        fputs(COLOR_RESET, out);
     }
     fputs(box_drawing_vert_horiz, out);
     for (int col = diff.dimension + 1; col < 79; ++col) {
@@ -169,7 +169,7 @@ static void do_print_legend(const Difdef::Diff &diff,
                 }
                 fprintf(out, " %c %s", alphabet[row], files[row].name.c_str());
                 if (get_use_colors(use_colors, out)) {
-                    fputs(TERM_RESET, out);
+                    fputs(COLOR_RESET, out);
                 }
                 fputc('\n', out);
             }
@@ -190,7 +190,7 @@ static void do_print_legend(const Difdef::Diff &diff,
                 }
                 fprintf(out, " %c %s", alphabet[row], files[row].name.c_str());
                 if (get_use_colors(use_colors, out)) {
-                    fputs(TERM_RESET, out);
+                    fputs(COLOR_RESET, out);
                 }
                 fputc('\n', out);
             }
@@ -202,7 +202,7 @@ static void do_print_legend(const Difdef::Diff &diff,
             }
             fprintf(out, "%c %s", alphabet[row], files[row].name.c_str());
             if (get_use_colors(use_colors, out)) {
-                fputs(TERM_RESET, out);
+                fputs(COLOR_RESET, out);
             }
             fputc('\n', out);
         }
@@ -292,23 +292,23 @@ int main(int argc, char **argv)
                     use_lines = true;
                     use_separator = true;
                     if (use_colors_not_specified) {
-                        use_colors = COLOR_AUTO;
+                        use_colors = COLOR_USE_AUTO;
                     }
                 } else if (!strcmp(longopts[longopt_index].name, "protanomaly")) {
                     set_protanomaly();
                 } else if (!strcmp(longopts[longopt_index].name, "color")) {
                     if (!optarg) { // optional argument not specified
                         use_colors_not_specified = false;
-                        use_colors = COLOR_AUTO;
+                        use_colors = COLOR_USE_AUTO;
                     } else if (!strcmp(optarg, "never")) {
                         use_colors_not_specified = false;
-                        use_colors = COLOR_NO;
+                        use_colors = COLOR_USE_NO;
                     } else if (!strcmp(optarg, "auto")) {
                         use_colors_not_specified = false;
-                        use_colors = COLOR_AUTO;
+                        use_colors = COLOR_USE_AUTO;
                     } else if (!strcmp(optarg, "always")) {
                         use_colors_not_specified = false;
-                        use_colors = COLOR_ALWAYS;
+                        use_colors = COLOR_USE_ALWAYS;
                     } else {
                         fputs("invalid value for --color[=no|auto|always]\n", stderr);
                         exit(EXIT_FAILURE);
