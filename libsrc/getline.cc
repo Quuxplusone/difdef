@@ -51,8 +51,9 @@ char *fgetline_notrim(char **p, FILE *stream)
                been returned, the contents of the buffer are unusable.
             */
             (*p)[len] = '\0';
-            if (feof(stream) && len > 0)
-              return *p;
+            if (feof(stream) && len > 0) {
+                return *p;
+            }
             else return NULL;
         }
         else if (strchr(*p+len, '\n') != NULL) {
@@ -62,8 +63,9 @@ char *fgetline_notrim(char **p, FILE *stream)
         else {
             /* we must continue reading */
             len += strlen(*p+len);
-            if (feof(stream))
-              return *p;
+            if (feof(stream)) {
+                return *p;
+            }
         }
     }
 }
@@ -105,8 +107,9 @@ static void try_resize(char **p, size_t *cap)
         newp = (char *)realloc(*p, newcap);
     }
 
-    if (newp != NULL)
-      *p = newp;
+    if (newp != NULL) {
+        *p = newp;
+    }
 
     /* At this point, |*p| hasn't lost any data, and |newcap| is valid. */
     *cap = newcap;

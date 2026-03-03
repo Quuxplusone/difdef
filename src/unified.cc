@@ -44,7 +44,7 @@ void do_print_unified_diff(const Difdef::Diff &diff,
     size_t abx = 0, ax = 0, bx = 0;
     size_t n = diff.lines.size();
     
-  repeat:
+repeat:
 
     /* Find the first differing line. */
     while (abx < n) {

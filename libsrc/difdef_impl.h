@@ -37,7 +37,7 @@ struct Difdef_StringSet {
     typedef std::map<std::string, Data> unique_lines_type;
     unique_lines_type unique_lines;
 
-    Difdef_StringSet(int num_files): NUM_FILES(num_files) {}
+    explicit Difdef_StringSet(int num_files): NUM_FILES(num_files) {}
 
     const std::string *add(int fileid, const std::string &text) {
         unique_lines_type::iterator p = unique_lines.find(text);
@@ -59,7 +59,8 @@ struct Difdef_StringSet {
     }
 };
 
-struct Difdef_impl {
+class Difdef_impl {
+public:
     const int NUM_FILES;  // set in constructor, read-only
     Difdef_StringSet unique_lines;
     std::vector<std::vector<const std::string *> > lines;
@@ -68,7 +69,7 @@ struct Difdef_impl {
     typedef Difdef::Diff Diff;
     typedef Difdef::mask_t mask_t;
 
-    Difdef_impl(int num_files):
+    explicit Difdef_impl(int num_files):
         NUM_FILES(num_files), unique_lines(num_files),
         lines(num_files), filter(NULL) { }
 

@@ -27,13 +27,13 @@
 #include <vector>
 
 class Difdef {
-  public:
+public:
     typedef unsigned int mask_t;
     static const int MAX_FILES = 32;  // maximum valid NUM_FILES
 
     const int NUM_FILES;  // set in constructor, read-only
 
-    Difdef(int num_files);  // Requires: 0 < num_files <= Difdef::MAX_FILES
+    explicit Difdef(int num_files);  // Requires: 0 < num_files <= Difdef::MAX_FILES
     ~Difdef();
     void set_filter(std::string (*filter)(const std::string &));
     void replace_file(int fileid, FILE *in);
@@ -49,7 +49,7 @@ class Difdef {
             bool in_file(int fileid) const;
             mask_t mask;  // a bitmask
 
-          private:
+        private:
             Line(): text(NULL), mask(0u) { }
             Line(const std::string *, mask_t);
             friend class Difdef;
@@ -59,12 +59,13 @@ class Difdef {
         const int dimension;
         std::vector<Line> lines;
 
-        Diff &operator = (const Diff &rhs);
+        Diff(const Diff &rhs);
+        Diff &operator=(const Diff &rhs);
         bool includes_file(int fileid) const;
         mask_t all_files_mask() const;
 
-      private:
-        Diff(int num_files, mask_t mask);  // private constructor means you can't create new ones
+    private:
+        explicit Diff(int num_files, mask_t mask);  // private constructor means you can't create new ones
         void append(const Diff &);
         mask_t mask;
         friend class Difdef;
@@ -76,6 +77,6 @@ class Difdef {
     // differing versions at all. Caller retains ownership of the strings.
     static Diff simply_concatenate(const std::vector<std::vector<const std::string *> > &);
 
-  private:
+private:
     class Difdef_impl *impl;
 };

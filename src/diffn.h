@@ -35,7 +35,7 @@ struct FileInfo {
     std::string name;
     FILE *fp;
     struct stat stat;
-    FileInfo(): fp(NULL) { memset(&stat, 0, sizeof stat); }
+    explicit FileInfo(): fp(NULL) { memset(&stat, 0, sizeof stat); }
 };
 
 void verify_properly_nested_directives(const Difdef::Diff &diff,
@@ -57,4 +57,3 @@ void do_print_unified_diff(const Difdef::Diff &diff,
                            size_t lines_of_context,
                            FILE *out);
 void do_error(const char *fmt, ...);
-

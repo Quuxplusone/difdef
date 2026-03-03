@@ -97,4 +97,4 @@ std::vector<const std::string *> patience_unique_lcs(
     return result;
 }
 
-}
+} // unnamed namespace

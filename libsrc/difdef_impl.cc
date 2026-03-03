@@ -52,7 +52,12 @@ Difdef::Diff::Diff(int num_files, mask_t mask): dimension(num_files), mask(mask)
     assert(mask < ((mask_t)1 << num_files));
 }
 
-Difdef::Diff &Difdef::Diff::operator = (const Difdef::Diff &rhs)
+Difdef::Diff::Diff(const Difdef::Diff &rhs):
+    dimension(rhs.dimension), lines(rhs.lines), mask(rhs.mask)
+{
+}
+
+Difdef::Diff &Difdef::Diff::operator=(const Difdef::Diff &rhs)
 {
     assert(this->dimension == rhs.dimension);
     this->mask = rhs.mask;
