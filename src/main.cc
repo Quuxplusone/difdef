@@ -74,7 +74,7 @@ static void do_help()
     puts("  -o  --output=FILE          Write result to FILE instead of standard output.");
     puts("  -r  --recursive            Recursively compare subdirectories.");
     puts("  -t                         Expand tabs and strip trailing whitespace.");
-    puts("      --pretty               Set most pretty-printing options.");
+    puts("      --pretty               Set most pretty-printing options in multi-column.");
     puts("");
     puts("Pretty-printing controls:");
     puts("      --header, --footer     Print filename legend as a header and/or footer.");
