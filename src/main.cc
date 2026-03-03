@@ -184,7 +184,14 @@ static void do_print_legend(const Difdef::Diff &diff,
         }
     } else {
         for (int row = 0; row < diff.dimension; ++row) {
-            fprintf(out, "%c %s\n", alphabet[row], files[row].name.c_str());
+            if (get_use_colors(use_colors, out)) {
+                fputs(get_term_escape(row), out);
+            }
+            fprintf(out, "%c %s", alphabet[row], files[row].name.c_str());
+            if (get_use_colors(use_colors, out)) {
+                fputs(TERM_RESET, out);
+            }
+            fputc('\n', out);
         }
     }
 }
