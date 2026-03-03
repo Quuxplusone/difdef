@@ -109,7 +109,7 @@ static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out, int us
         fputc(use_lines ? '|' : '-', out);
     }
     fputc('|', out);
-    for (int col = 0; col < 79; ++col) {
+    for (int col = diff.dimension + 1; col < 79; ++col) {
         fputc('-', out);
     }
     fputc('\n', out);
