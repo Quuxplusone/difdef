@@ -406,13 +406,13 @@ int main(int argc, char **argv)
                                   use_only_simple_ifs, out);
         } else {
             if (use_header) {
-                do_print_legend(diff, files, out, 1, use_lines);
+                do_print_legend(diff, files, out, 1 /* as header */, use_lines);
                 do_print_horizontal_rule(diff, out, use_lines);
             }
             do_print_multicolumn(diff, out);
             if (use_footer) {
                 do_print_horizontal_rule(diff, out, use_lines);
-                do_print_legend(diff, files, out, 0, use_lines);
+                do_print_legend(diff, files, out, 0 /* as footer */, use_lines);
             }
         }
     }
