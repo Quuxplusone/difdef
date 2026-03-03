@@ -66,8 +66,9 @@ static void do_help()
     puts("      --footer               Print filename legend as a footer.");
     puts("      --lines                Draw lines from columns to filenames.");
     puts("      --color[=never|always|auto]");
-    puts("                             Never, always, or only on a tty. (Assumes VTxxx.)");
-    puts("                             (Specify --color=always when using less, etc.)");
+    puts("                             Never, always, or only use colors on a tty.");
+    puts("                             (Assumes a color VTxxx terminal emulator.");
+    puts("                              Specify --color=always when using less, etc.)");
     puts("");
     puts("  --help  Output this help.");
     puts("");
