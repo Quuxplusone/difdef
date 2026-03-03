@@ -28,7 +28,6 @@ struct term_color {
     const char *ctlseq;
 };
 
-void set_term_color_count();
 const char *get_term_escape(int);
 bool get_use_colors(int, FILE *);
 

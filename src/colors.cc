@@ -15,29 +15,20 @@ struct term_color term_colors[] = {
     { "PURPLE"        , PURPLE },
     { "CYAN"          , CYAN },
     { "WHITE"         , WHITE },
-    { "DARK_GRAY"     , DARK_GRAY },
     { "BRIGHT_RED"    , BRIGHT_RED },
     { "BRIGHT_GREEN"  , BRIGHT_GREEN },
     { "BRIGHT_YELLOW" , BRIGHT_YELLOW },
     { "BRIGHT_BLUE"   , BRIGHT_BLUE },
     { "BRIGHT_PURPLE" , BRIGHT_PURPLE },
     { "BRIGHT_CYAN"   , BRIGHT_CYAN },
-    { "BRIGHT_WHITE"  , BRIGHT_WHITE },
     { 0               , 0 }
 };
 
-void set_term_color_count() {
-    term_color_count = 0;
-    while (true) {
-        if (!term_colors[term_color_count].name) {
-            break;
-        }
-        term_color_count += 1;
-    }
-}
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define COLOR_COUNT (ARRAY_SIZE(term_colors) - 1)
 
 const char *get_term_escape(int column) {
-    int idx = column % term_color_count;
+    int idx = column % COLOR_COUNT;
     return term_colors[idx].ctlseq;
 }
 

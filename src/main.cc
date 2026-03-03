@@ -374,10 +374,6 @@ int main(int argc, char **argv)
         preceded_by_digit = isdigit(c);
     }
 
-    if (use_colors) {
-        set_term_color_count();
-    }
-
     if (use_separator || use_lines || use_header || use_footer) {
         init_box_drawing(0 /* force ASCII */);
     }
