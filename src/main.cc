@@ -62,13 +62,11 @@ static void do_help()
     puts("  -o  --output=FILE          Write result to FILE instead of standard output.");
     puts("  -r  --recursive            Recursively compare subdirectories.");
     puts("  -t                         Expand tabs and strip trailing whitespace.");
-    puts("      --header               Print filename legend as a header.");
-    puts("      --footer               Print filename legend as a footer.");
+    puts("      --header, --footer     Print filename legend as a header and/or footer.");
     puts("      --lines                Draw lines from columns to filenames.");
     puts("      --color[=never|always|auto]");
     puts("                             Never, always, or only use colors on a tty.");
-    puts("                             (Assumes a color VTxxx terminal emulator.");
-    puts("                              Specify --color=always when using less, etc.)");
+    puts("                             (VTxxx ctlseqs; difdef --color=always | less -R)");
     puts("");
     puts("  --help  Output this help.");
     puts("");
