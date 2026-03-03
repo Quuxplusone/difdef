@@ -62,8 +62,10 @@ static void do_help()
     puts("  -o  --output=FILE          Write result to FILE instead of standard output.");
     puts("  -r  --recursive            Recursively compare subdirectories.");
     puts("  -t                         Expand tabs and strip trailing whitespace.");
+    puts("      --pretty               Set most pretty-printing options.");
     puts("      --header, --footer     Print filename legend as a header and/or footer.");
     puts("      --lines                Draw lines from columns to filenames.");
+    puts("      --separator            Vertically separate left and right columns.");
     puts("      --color[=never|always|auto]");
     puts("                             Use colors: never, always, or (default) on a tty.");
     puts("                             (VTxxx ctlseqs; difdef --color=always | less -R)");
@@ -84,7 +86,7 @@ static void do_help()
     exit(EXIT_SUCCESS);
 }
 
-static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out, int use_colors)
+static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out, int use_colors, int use_separator)
 {
     /* The default output is a multicolumn format:
      *     a  This line appears only in the first file.
@@ -106,7 +108,9 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out, int use_co
         if (get_use_colors(use_colors, out)) {
             fputs(TERM_RESET, out);
         }
-        putc('|', out);
+        if (use_separator) {
+            putc('|', out);
+        }
         fprintf(out, "%s\n", line.text->c_str());
     }
 }
@@ -226,6 +230,8 @@ int main(int argc, char **argv)
     bool use_header = false;
     bool use_footer = false;
     bool use_lines = false;
+    bool use_separator = false;
+    bool use_colors_not_specified = true;
     int use_colors = 0;
     size_t lines_of_context = 0;
 
@@ -241,6 +247,8 @@ int main(int argc, char **argv)
         { "header", no_argument, NULL, 0 },
         { "footer", no_argument, NULL, 0 },
         { "lines", no_argument, NULL, 0 },
+        { "separator", no_argument, NULL, 0 },
+        { "pretty", no_argument, NULL, 0 },
         { "color", optional_argument, NULL, 0 },
         { 0, 0, 0, 0 }
     };
@@ -267,14 +275,27 @@ int main(int argc, char **argv)
                     use_footer = true;
                 } else if (!strcmp(longopts[longopt_index].name, "lines")) {
                     use_lines = true;
+                } else if (!strcmp(longopts[longopt_index].name, "separator")) {
+                    use_separator = true;
+                } else if (!strcmp(longopts[longopt_index].name, "pretty")) {
+                    use_header = true;
+                    use_lines = true;
+                    use_separator = true;
+                    if (use_colors_not_specified) {
+                        use_colors = COLOR_AUTO;
+                    }
                 } else if (!strcmp(longopts[longopt_index].name, "color")) {
                     if (!optarg) { // optional argument not specified
+                        use_colors_not_specified = false;
                         use_colors = COLOR_AUTO;
                     } else if (!strcmp(optarg, "never")) {
+                        use_colors_not_specified = false;
                         use_colors = COLOR_NO;
                     } else if (!strcmp(optarg, "auto")) {
+                        use_colors_not_specified = false;
                         use_colors = COLOR_AUTO;
                     } else if (!strcmp(optarg, "always")) {
+                        use_colors_not_specified = false;
                         use_colors = COLOR_ALWAYS;
                     } else {
                         fputs("invalid value for --color[=no|auto|always]\n", stderr);
@@ -472,7 +493,7 @@ int main(int argc, char **argv)
                 do_print_legend(diff, files, out, 1 /* as header */, use_lines, use_colors);
                 do_print_horizontal_rule(diff, out, use_lines, use_colors);
             }
-            do_print_multicolumn(diff, out, use_colors);
+            do_print_multicolumn(diff, out, use_colors, use_separator);
             if (use_footer) {
                 do_print_horizontal_rule(diff, out, use_lines, use_colors);
                 do_print_legend(diff, files, out, 0 /* as footer */, use_lines, use_colors);
