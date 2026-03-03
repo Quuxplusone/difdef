@@ -347,7 +347,7 @@ int main(int argc, char **argv)
     } else {
         /* If we're doing "difdef" without "-r", difdef is populated. */
         Difdef::Diff diff = difdef.merge();
-    
+
         /* Try to open the output file. */
         FILE *out = stdout;
         if (output_filename != NULL) {
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
                 }
             }
         }
-    
+
         /* Print out the diff. */
         if (print_unified_diff) {
             do_print_unified_diff(diff, &files[0], lines_of_context, out);
