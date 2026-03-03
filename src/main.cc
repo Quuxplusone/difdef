@@ -33,9 +33,22 @@
 #include <getopt.h>
 
 #include "diffn.h"
+#include "colors.h"
+#include "box_drawing.h"
+
+char *box_drawing_vertical;
+char *box_drawing_horizontal;
+char *box_drawing_vert_horiz;
+char *box_drawing_horiz_vert;
+char *box_drawing_right_down;
+char *box_drawing_right_up;
+char *box_drawing_horiz_up;
+char *box_drawing_horiz_down;
 
 typedef Difdef::mask_t mask_t;
 
+#define AS_HEADER 1
+#define AS_FOOTER 0
 
 void do_error(const char *fmt, ...)
 {
@@ -61,6 +74,16 @@ static void do_help()
     puts("  -o  --output=FILE          Write result to FILE instead of standard output.");
     puts("  -r  --recursive            Recursively compare subdirectories.");
     puts("  -t                         Expand tabs and strip trailing whitespace.");
+    puts("      --pretty               Set most pretty-printing options in multi-column.");
+    puts("");
+    puts("Pretty-printing controls:");
+    puts("      --header, --footer     Print filename legend as a header and/or footer.");
+    puts("      --lines                Draw lines from columns to filenames.");
+    puts("      --separator            Vertically separate left and right columns.");
+    puts("      --color[=never|always|auto]");
+    puts("                             Use colors: never, always, or (default) on a tty.");
+    puts("                             (VTxxx ctlseqs; difdef --color=always | less -R)");
+    puts("      --ascii                Force line-drawing characters in UTF-8 locales.");
     puts("");
     puts("  --help  Output this help.");
     puts("");
@@ -78,8 +101,7 @@ static void do_help()
     exit(EXIT_SUCCESS);
 }
 
-
-static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out)
+static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out, int use_colors, int use_separator)
 {
     /* The default output is a multicolumn format:
      *     a  This line appears only in the first file.
@@ -93,12 +115,119 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out)
     for (size_t i=0; i < diff.lines.size(); ++i) {
         const Difdef::Diff::Line &line = diff.lines[i];
         for (int j=0; j < diff.dimension; ++j) {
+            if (get_use_colors(use_colors, out)) {
+                fputs(get_term_escape(j), out);
+            }
             putc((line.in_file(j) ? alphabet[j] : ' '), out);
+        }
+        if (get_use_colors(use_colors, out)) {
+            fputs(COLOR_RESET, out);
+        }
+        if (use_separator) {
+            fputs(box_drawing_vertical, out);
         }
         fprintf(out, "%s\n", line.text->c_str());
     }
 }
 
+static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out, int use_lines, int use_colors, int as_header, int use_separator)
+{
+    for (int col = 0; col < diff.dimension; ++col) {
+        if (use_lines) {
+            if (get_use_colors(use_colors, out)) {
+                fputs(get_term_escape(col), out);
+            }
+            fputs(box_drawing_vertical, out);
+        } else {
+            fputs(box_drawing_horizontal, out);
+        }
+    }
+    if (get_use_colors(use_colors, out)) {
+        fputs(COLOR_RESET, out);
+    }
+    if (use_separator) {
+        if (use_lines) {
+            if (as_header) {
+                fputs(box_drawing_right_down, out);
+            } else {
+                fputs(box_drawing_right_up, out);
+            }
+        } else {
+            if (as_header) {
+                fputs(box_drawing_horiz_down, out);
+            } else {
+                fputs(box_drawing_horiz_up, out);
+            }
+        }
+    }
+    for (int col = diff.dimension + 1; col < 79; ++col) {
+        fputs(box_drawing_horizontal, out);
+    }
+    fputc('\n', out);
+}
+
+static void do_print_legend(const Difdef::Diff &diff,
+                            const std::vector<FileInfo> files,
+                            FILE *out, int as_header, int use_lines, int use_colors)
+{
+    static const char alphabet[] = "abcdefghijklmnopqrstuvwxyzABCDEF";
+    if (use_lines) {
+        if (as_header) {
+            for (int row = 0; row < diff.dimension; ++row) {
+                for (int col = 0; col < row; ++col) {
+                    if (get_use_colors(use_colors, out)) {
+                        fputs(get_term_escape(col), out);
+                    }
+                    fputs(box_drawing_vertical, out);
+                }
+                if (get_use_colors(use_colors, out)) {
+                    fputs(get_term_escape(row), out);
+                }
+                fputs(box_drawing_right_down, out);
+                for (int col = 0; col < diff.dimension - row; ++col) {
+                    fputs(box_drawing_horizontal, out);
+                }
+                fprintf(out, " %c %s", alphabet[row], files[row].name.c_str());
+                if (get_use_colors(use_colors, out)) {
+                    fputs(COLOR_RESET, out);
+                }
+                fputc('\n', out);
+            }
+        } else {
+            for (int row = diff.dimension - 1; row >= 0; --row) {
+                for (int col = 0; col < row; ++col) {
+                    if (get_use_colors(use_colors, out)) {
+                        fputs(get_term_escape(col), out);
+                    }
+                    fputs(box_drawing_vertical, out);
+                }
+                if (get_use_colors(use_colors, out)) {
+                    fputs(get_term_escape(row), out);
+                }
+                fputs(box_drawing_right_up, out);
+                for (int col = 0; col < diff.dimension - row; ++col) {
+                    fputs(box_drawing_horizontal, out);
+                }
+                fprintf(out, " %c %s", alphabet[row], files[row].name.c_str());
+                if (get_use_colors(use_colors, out)) {
+                    fputs(COLOR_RESET, out);
+                }
+                fputc('\n', out);
+            }
+        }
+    } else {
+        for (int row = 0; row < diff.dimension; ++row) {
+            if (get_use_colors(use_colors, out)) {
+                fputs(get_term_escape(row), out);
+            }
+            fprintf(out, "%c %s", alphabet[row], files[row].name.c_str());
+            if (get_use_colors(use_colors, out)) {
+                fputs(COLOR_RESET, out);
+            }
+            fputc('\n', out);
+        }
+    }
+}
 
 static std::string do_normalize_whitespace(const std::string &line)
 {
@@ -118,7 +247,6 @@ static std::string do_normalize_whitespace(const std::string &line)
     }
 }
 
-
 int main(int argc, char **argv)
 {
     std::vector<std::string> user_defined_macro_names;
@@ -128,6 +256,13 @@ int main(int argc, char **argv)
     bool print_recursively = false;
     bool use_only_simple_ifs = true;
     bool normalize_whitespace = false;
+    bool use_header = false;
+    bool use_footer = false;
+    bool use_lines = false;
+    bool use_separator = false;
+    bool use_colors_not_specified = true;
+    bool force_ascii = false;
+    int use_colors = 0;
     size_t lines_of_context = 0;
 
     static const struct option longopts[] = {
@@ -139,6 +274,15 @@ int main(int argc, char **argv)
         { "simple", no_argument, NULL, 0 },
         { "unified", no_argument, NULL, 'u' },
         { "help", no_argument, NULL, 0 },
+        { "header", no_argument, NULL, 0 },
+        { "footer", no_argument, NULL, 0 },
+        { "lines", no_argument, NULL, 0 },
+        { "separator", no_argument, NULL, 0 },
+        { "pretty", no_argument, NULL, 0 },
+        { "color", optional_argument, NULL, 0 },
+        { "protanomaly", no_argument, NULL, 0 },
+        { "ascii", no_argument, NULL, 0 },
+        { 0, 0, 0, 0 }
     };
     int c;
     int longopt_index;
@@ -157,6 +301,42 @@ int main(int argc, char **argv)
                     use_only_simple_ifs = false;
                 } else if (!strcmp(longopts[longopt_index].name, "simple")) {
                     use_only_simple_ifs = true;
+                } else if (!strcmp(longopts[longopt_index].name, "header")) {
+                    use_header = true;
+                } else if (!strcmp(longopts[longopt_index].name, "footer")) {
+                    use_footer = true;
+                } else if (!strcmp(longopts[longopt_index].name, "lines")) {
+                    use_lines = true;
+                } else if (!strcmp(longopts[longopt_index].name, "separator")) {
+                    use_separator = true;
+                } else if (!strcmp(longopts[longopt_index].name, "pretty")) {
+                    use_header = true;
+                    use_lines = true;
+                    use_separator = true;
+                    if (use_colors_not_specified) {
+                        use_colors = COLOR_USE_AUTO;
+                    }
+                } else if (!strcmp(longopts[longopt_index].name, "protanomaly")) {
+                    set_protanomaly();
+                } else if (!strcmp(longopts[longopt_index].name, "ascii")) {
+                    force_ascii = true;
+                } else if (!strcmp(longopts[longopt_index].name, "color")) {
+                    if (!optarg) { // optional argument not specified
+                        use_colors_not_specified = false;
+                        use_colors = COLOR_USE_AUTO;
+                    } else if (!strcmp(optarg, "never")) {
+                        use_colors_not_specified = false;
+                        use_colors = COLOR_USE_NO;
+                    } else if (!strcmp(optarg, "auto")) {
+                        use_colors_not_specified = false;
+                        use_colors = COLOR_USE_AUTO;
+                    } else if (!strcmp(optarg, "always")) {
+                        use_colors_not_specified = false;
+                        use_colors = COLOR_USE_ALWAYS;
+                    } else {
+                        fputs("invalid value for --color[=no|auto|always]\n", stderr);
+                        exit(EXIT_FAILURE);
+                    }
                 } else {
                     assert(false);
                 }
@@ -213,8 +393,16 @@ int main(int argc, char **argv)
                     lines_of_context = std::max<size_t>(lines_of_context, 3);
                 }
                 break;
+            case '?':
+                exit(EXIT_FAILURE);
+            default:
+                assert(false);
         }
         preceded_by_digit = isdigit(c);
+    }
+
+    if (use_separator || use_lines || use_header || use_footer) {
+        init_box_drawing(force_ascii);
     }
 
     if (ocontext != (size_t)-1) {
@@ -315,7 +503,7 @@ int main(int argc, char **argv)
     } else {
         /* If we're doing "difdef" without "-r", difdef is populated. */
         Difdef::Diff diff = difdef.merge();
-    
+
         /* Try to open the output file. */
         FILE *out = stdout;
         if (output_filename != NULL) {
@@ -328,7 +516,7 @@ int main(int argc, char **argv)
                 }
             }
         }
-    
+
         /* Print out the diff. */
         if (print_unified_diff) {
             do_print_unified_diff(diff, &files[0], lines_of_context, out);
@@ -337,7 +525,15 @@ int main(int argc, char **argv)
             do_print_using_ifdefs(diff, user_defined_macro_names,
                                   use_only_simple_ifs, out);
         } else {
-            do_print_multicolumn(diff, out);
+            if (use_header) {
+                do_print_legend(diff, files, out, AS_HEADER, use_lines, use_colors);
+                do_print_horizontal_rule(diff, out, use_lines, use_colors, AS_HEADER, use_separator);
+            }
+            do_print_multicolumn(diff, out, use_colors, use_separator);
+            if (use_footer) {
+                do_print_horizontal_rule(diff, out, use_lines, use_colors, AS_FOOTER, use_separator);
+                do_print_legend(diff, files, out, AS_FOOTER, use_lines, use_colors);
+            }
         }
     }
 
