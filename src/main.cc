@@ -34,9 +34,16 @@
 
 #include "diffn.h"
 #include "colors.h"
+#include "box_drawing.h"
+
+char *box_drawing_vertical;
+char *box_drawing_horizontal;
+char *box_drawing_vert_horiz;
+char *box_drawing_horiz_vert;
+char *box_drawing_right_down;
+char *box_drawing_right_up;
 
 typedef Difdef::mask_t mask_t;
-
 
 void do_error(const char *fmt, ...)
 {
@@ -111,7 +118,7 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out, int use_co
             fputs(TERM_RESET, out);
         }
         if (use_separator) {
-            putc('|', out);
+            fputs(box_drawing_vertical, out);
         }
         fprintf(out, "%s\n", line.text->c_str());
     }
@@ -124,17 +131,17 @@ static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out, int us
             if (get_use_colors(use_colors, out)) {
                 fputs(get_term_escape(col), out);
             }
-            fputc('|', out);
+            fputs(box_drawing_vert_horiz, out);
         } else {
-            fputc('-', out);
+            fputs(box_drawing_horizontal, out);
         }
     }
     if (get_use_colors(use_colors, out)) {
         fputs(TERM_RESET, out);
     }
-    fputc('|', out);
+    fputs(box_drawing_vert_horiz, out);
     for (int col = diff.dimension + 1; col < 79; ++col) {
-        fputc('-', out);
+        fputs(box_drawing_horizontal, out);
     }
     fputc('\n', out);
 }
@@ -151,14 +158,14 @@ static void do_print_legend(const Difdef::Diff &diff,
                     if (get_use_colors(use_colors, out)) {
                         fputs(get_term_escape(col), out);
                     }
-                    fputc('|', out);
+                    fputs(box_drawing_vertical, out);
                 }
                 if (get_use_colors(use_colors, out)) {
                     fputs(get_term_escape(row), out);
                 }
-                fputc('.', out);
+                fputs(box_drawing_right_down, out);
                 for (int col = 0; col < diff.dimension - row; ++col) {
-                    fputc('-', out);
+                    fputs(box_drawing_horizontal, out);
                 }
                 fprintf(out, " %c %s", alphabet[row], files[row].name.c_str());
                 if (get_use_colors(use_colors, out)) {
@@ -172,14 +179,14 @@ static void do_print_legend(const Difdef::Diff &diff,
                     if (get_use_colors(use_colors, out)) {
                         fputs(get_term_escape(col), out);
                     }
-                    fputc('|', out);
+                    fputs(box_drawing_vertical, out);
                 }
                 if (get_use_colors(use_colors, out)) {
                     fputs(get_term_escape(row), out);
                 }
-                fputc('\'', out);
+                fputs(box_drawing_right_up, out);
                 for (int col = 0; col < diff.dimension - row; ++col) {
-                    fputc('-', out);
+                    fputs(box_drawing_horizontal, out);
                 }
                 fprintf(out, " %c %s", alphabet[row], files[row].name.c_str());
                 if (get_use_colors(use_colors, out)) {
@@ -369,6 +376,10 @@ int main(int argc, char **argv)
 
     if (use_colors) {
         set_term_color_count();
+    }
+
+    if (use_separator || use_lines || use_header || use_footer) {
+        init_box_drawing(0 /* force ASCII */);
     }
 
     if (ocontext != (size_t)-1) {
