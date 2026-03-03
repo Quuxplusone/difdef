@@ -63,6 +63,7 @@ static void do_help()
     puts("  -t                         Expand tabs and strip trailing whitespace.");
     puts("      --header               Print filename legend as a header.");
     puts("      --footer               Print filename legend as a footer.");
+    puts("      --lines                Draw lines from columns to filenames.");
     puts("");
     puts("  --help  Output this help.");
     puts("");
@@ -102,10 +103,10 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out)
     }
 }
 
-static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out)
+static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out, int use_lines)
 {
     for (int col = 0; col < diff.dimension; ++col) {
-        fputc('-', out);
+        fputc(use_lines ? '|' : '-', out);
     }
     fputc('|', out);
     for (int col = 0; col < 79; ++col) {
@@ -116,11 +117,37 @@ static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out)
 
 static void do_print_legend(const Difdef::Diff &diff,
                             const std::vector<FileInfo> files,
-                            FILE *out)
+                            FILE *out, int as_header, int use_lines)
 {
     static const char alphabet[] = "abcdefghijklmnopqrstuvwxyzABCDEF";
-    for (int row = 0; row < diff.dimension; ++row) {
-        fprintf(out, "%c %s\n", alphabet[row], files[row].name.c_str());
+    if (use_lines) {
+        if (as_header) {
+            for (int row = 0; row < diff.dimension; ++row) {
+                for (int col = 0; col < row; ++col) {
+                    fputc('|', out);
+                }
+                fputc('.', out);
+                for (int col = 0; col < diff.dimension - row; ++col) {
+                    fputc('-', out);
+                }
+                fprintf(out, " %c %s\n", alphabet[row], files[row].name.c_str());
+            }
+        } else {
+            for (int row = diff.dimension - 1; row >= 0; --row) {
+                for (int col = 0; col < row; ++col) {
+                    fputc('|', out);
+                }
+                fputc('\'', out);
+                for (int col = 0; col < diff.dimension - row; ++col) {
+                    fputc('-', out);
+                }
+                fprintf(out, " %c %s\n", alphabet[row], files[row].name.c_str());
+            }
+        }
+    } else {
+        for (int row = 0; row < diff.dimension; ++row) {
+            fprintf(out, "%c %s\n", alphabet[row], files[row].name.c_str());
+        }
     }
 }
 
@@ -154,6 +181,7 @@ int main(int argc, char **argv)
     bool normalize_whitespace = false;
     bool use_header = false;
     bool use_footer = false;
+    bool use_lines = false;
     size_t lines_of_context = 0;
 
     static const struct option longopts[] = {
@@ -167,6 +195,7 @@ int main(int argc, char **argv)
         { "help", no_argument, NULL, 0 },
         { "header", no_argument, NULL, 0 },
         { "footer", no_argument, NULL, 0 },
+        { "lines", no_argument, NULL, 0 },
         { 0, 0, 0, 0 }
     };
     int c;
@@ -190,6 +219,8 @@ int main(int argc, char **argv)
                     use_header = true;
                 } else if (!strcmp(longopts[longopt_index].name, "footer")) {
                     use_footer = true;
+                } else if (!strcmp(longopts[longopt_index].name, "lines")) {
+                    use_lines = true;
                 } else {
                     assert(false);
                 }
@@ -375,13 +406,13 @@ int main(int argc, char **argv)
                                   use_only_simple_ifs, out);
         } else {
             if (use_header) {
-                do_print_legend(diff, files, out);
-                do_print_horizontal_rule(diff, out);
+                do_print_legend(diff, files, out, 1, use_lines);
+                do_print_horizontal_rule(diff, out, use_lines);
             }
             do_print_multicolumn(diff, out);
             if (use_footer) {
-                do_print_horizontal_rule(diff, out);
-                do_print_legend(diff, files, out);
+                do_print_horizontal_rule(diff, out, use_lines);
+                do_print_legend(diff, files, out, 0, use_lines);
             }
         }
     }
