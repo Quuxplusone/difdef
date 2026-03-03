@@ -95,6 +95,7 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out)
         for (int j=0; j < diff.dimension; ++j) {
             putc((line.in_file(j) ? alphabet[j] : ' '), out);
         }
+        putc('|', out);
         fprintf(out, "%s\n", line.text->c_str());
     }
 }
