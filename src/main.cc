@@ -42,8 +42,13 @@ char *box_drawing_vert_horiz;
 char *box_drawing_horiz_vert;
 char *box_drawing_right_down;
 char *box_drawing_right_up;
+char *box_drawing_horiz_up;
+char *box_drawing_horiz_down;
 
 typedef Difdef::mask_t mask_t;
+
+#define AS_HEADER 1
+#define AS_FOOTER 0
 
 void do_error(const char *fmt, ...)
 {
@@ -124,14 +129,14 @@ static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out, int use_co
     }
 }
 
-static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out, int use_lines, int use_colors)
+static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out, int use_lines, int use_colors, int as_header, int use_separator)
 {
     for (int col = 0; col < diff.dimension; ++col) {
         if (use_lines) {
             if (get_use_colors(use_colors, out)) {
                 fputs(get_term_escape(col), out);
             }
-            fputs(box_drawing_vert_horiz, out);
+            fputs(box_drawing_vertical, out);
         } else {
             fputs(box_drawing_horizontal, out);
         }
@@ -139,7 +144,21 @@ static void do_print_horizontal_rule(const Difdef::Diff &diff, FILE *out, int us
     if (get_use_colors(use_colors, out)) {
         fputs(COLOR_RESET, out);
     }
-    fputs(box_drawing_vert_horiz, out);
+    if (use_separator) {
+        if (use_lines) {
+            if (as_header) {
+                fputs(box_drawing_right_down, out);
+            } else {
+                fputs(box_drawing_right_up, out);
+            }
+        } else {
+            if (as_header) {
+                fputs(box_drawing_horiz_down, out);
+            } else {
+                fputs(box_drawing_horiz_up, out);
+            }
+        }
+    }
     for (int col = diff.dimension + 1; col < 79; ++col) {
         fputs(box_drawing_horizontal, out);
     }
@@ -378,7 +397,7 @@ int main(int argc, char **argv)
     }
 
     if (use_separator || use_lines || use_header || use_footer) {
-        init_box_drawing(0 /* force ASCII */);
+        init_box_drawing(0 /* don't force ASCII */);
     }
 
     if (ocontext != (size_t)-1) {
@@ -502,13 +521,13 @@ int main(int argc, char **argv)
                                   use_only_simple_ifs, out);
         } else {
             if (use_header) {
-                do_print_legend(diff, files, out, 1 /* as header */, use_lines, use_colors);
-                do_print_horizontal_rule(diff, out, use_lines, use_colors);
+                do_print_legend(diff, files, out, AS_HEADER, use_lines, use_colors);
+                do_print_horizontal_rule(diff, out, use_lines, use_colors, AS_HEADER, use_separator);
             }
             do_print_multicolumn(diff, out, use_colors, use_separator);
             if (use_footer) {
-                do_print_horizontal_rule(diff, out, use_lines, use_colors);
-                do_print_legend(diff, files, out, 0 /* as footer */, use_lines, use_colors);
+                do_print_horizontal_rule(diff, out, use_lines, use_colors, AS_FOOTER, use_separator);
+                do_print_legend(diff, files, out, AS_FOOTER, use_lines, use_colors);
             }
         }
     }
