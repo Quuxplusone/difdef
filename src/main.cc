@@ -167,6 +167,7 @@ int main(int argc, char **argv)
         { "help", no_argument, NULL, 0 },
         { "header", no_argument, NULL, 0 },
         { "footer", no_argument, NULL, 0 },
+        { 0, 0, 0, 0 }
     };
     int c;
     int longopt_index;
@@ -245,6 +246,10 @@ int main(int argc, char **argv)
                     lines_of_context = std::max<size_t>(lines_of_context, 3);
                 }
                 break;
+            case '?':
+                exit(EXIT_FAILURE);
+            default:
+                assert(false);
         }
         preceded_by_digit = isdigit(c);
     }
