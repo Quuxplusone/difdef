@@ -259,6 +259,7 @@ int main(int argc, char **argv)
         { "separator", no_argument, NULL, 0 },
         { "pretty", no_argument, NULL, 0 },
         { "color", optional_argument, NULL, 0 },
+        { "protanomaly", no_argument, NULL, 0 },
         { 0, 0, 0, 0 }
     };
     int c;
@@ -293,6 +294,8 @@ int main(int argc, char **argv)
                     if (use_colors_not_specified) {
                         use_colors = COLOR_AUTO;
                     }
+                } else if (!strcmp(longopts[longopt_index].name, "protanomaly")) {
+                    set_protanomaly();
                 } else if (!strcmp(longopts[longopt_index].name, "color")) {
                     if (!optarg) { // optional argument not specified
                         use_colors_not_specified = false;
