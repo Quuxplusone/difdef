@@ -63,6 +63,8 @@ static void do_help()
     puts("  -r  --recursive            Recursively compare subdirectories.");
     puts("  -t                         Expand tabs and strip trailing whitespace.");
     puts("      --pretty               Set most pretty-printing options.");
+    puts("");
+    puts("Pretty-printing controls:");
     puts("      --header, --footer     Print filename legend as a header and/or footer.");
     puts("      --lines                Draw lines from columns to filenames.");
     puts("      --separator            Vertically separate left and right columns.");
