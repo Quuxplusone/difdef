@@ -83,6 +83,7 @@ static void do_help()
     puts("      --color[=never|always|auto]");
     puts("                             Use colors: never, always, or (default) on a tty.");
     puts("                             (VTxxx ctlseqs; difdef --color=always | less -R)");
+    puts("      --ascii                Force line-drawing characters in UTF-8 locales.");
     puts("");
     puts("  --help  Output this help.");
     puts("");
@@ -260,6 +261,7 @@ int main(int argc, char **argv)
     bool use_lines = false;
     bool use_separator = false;
     bool use_colors_not_specified = true;
+    bool force_ascii = false;
     int use_colors = 0;
     size_t lines_of_context = 0;
 
@@ -279,6 +281,7 @@ int main(int argc, char **argv)
         { "pretty", no_argument, NULL, 0 },
         { "color", optional_argument, NULL, 0 },
         { "protanomaly", no_argument, NULL, 0 },
+        { "ascii", no_argument, NULL, 0 },
         { 0, 0, 0, 0 }
     };
     int c;
@@ -315,6 +318,8 @@ int main(int argc, char **argv)
                     }
                 } else if (!strcmp(longopts[longopt_index].name, "protanomaly")) {
                     set_protanomaly();
+                } else if (!strcmp(longopts[longopt_index].name, "ascii")) {
+                    force_ascii = true;
                 } else if (!strcmp(longopts[longopt_index].name, "color")) {
                     if (!optarg) { // optional argument not specified
                         use_colors_not_specified = false;
@@ -397,7 +402,7 @@ int main(int argc, char **argv)
     }
 
     if (use_separator || use_lines || use_header || use_footer) {
-        init_box_drawing(0 /* don't force ASCII */);
+        init_box_drawing(force_ascii);
     }
 
     if (ocontext != (size_t)-1) {
