@@ -65,7 +65,7 @@ static void do_help()
     puts("      --header, --footer     Print filename legend as a header and/or footer.");
     puts("      --lines                Draw lines from columns to filenames.");
     puts("      --color[=never|always|auto]");
-    puts("                             Never, always, or only use colors on a tty.");
+    puts("                             Use colors: never, always, or (default) on a tty.");
     puts("                             (VTxxx ctlseqs; difdef --color=always | less -R)");
     puts("");
     puts("  --help  Output this help.");
