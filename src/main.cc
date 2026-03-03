@@ -31,9 +31,9 @@
 #include <vector>
 
 #include <getopt.h>
-#include <unistd.h>
 
 #include "diffn.h"
+#include "colors.h"
 
 typedef Difdef::mask_t mask_t;
 
@@ -82,82 +82,6 @@ static void do_help()
     puts("Each line of output will be prefixed by N characters indicating which files");
     puts("contain that line.");
     exit(EXIT_SUCCESS);
-}
-
-#define BLACK         "\x1b[0;22;30m"
-#define RED           "\x1b[0;22;31m"
-#define GREEN         "\x1b[0;22;32m"
-#define YELLOW        "\x1b[0;22;33m"
-#define BLUE          "\x1b[0;22;34m"
-#define PURPLE        "\x1b[0;22;35m"
-#define CYAN          "\x1b[0;22;36m"
-#define WHITE         "\x1b[0;22;37m"
-#define DARK_GRAY     "\x1b[0;1;30m"
-#define BRIGHT_RED    "\x1b[0;1;31m"
-#define BRIGHT_GREEN  "\x1b[0;1;32m"
-#define BRIGHT_YELLOW "\x1b[0;1;33m"
-#define BRIGHT_BLUE   "\x1b[0;1;34m"
-#define BRIGHT_PURPLE "\x1b[0;1;35m"
-#define BRIGHT_CYAN   "\x1b[0;1;36m"
-#define BRIGHT_WHITE  "\x1b[0;1;37m"
-#define TERM_RESET    "\x1b[0m"
-
-int term_color_count = 0;
-
-struct term_color {
-    const char *name;
-    const char *ctlseq;
-};
-
-struct term_color term_colors[] = {
-    { "RED"           , RED },
-    { "GREEN"         , GREEN },
-    { "YELLOW"        , YELLOW },
-    { "BLUE"          , BLUE },
-    { "PURPLE"        , PURPLE },
-    { "CYAN"          , CYAN },
-    { "WHITE"         , WHITE },
-    { "DARK_GRAY"     , DARK_GRAY },
-    { "BRIGHT_RED"    , BRIGHT_RED },
-    { "BRIGHT_GREEN"  , BRIGHT_GREEN },
-    { "BRIGHT_YELLOW" , BRIGHT_YELLOW },
-    { "BRIGHT_BLUE"   , BRIGHT_BLUE },
-    { "BRIGHT_PURPLE" , BRIGHT_PURPLE },
-    { "BRIGHT_CYAN"   , BRIGHT_CYAN },
-    { "BRIGHT_WHITE"  , BRIGHT_WHITE },
-    { 0               , 0 }
-};
-
-void set_term_color_count() {
-    term_color_count = 0;
-    while (true) {
-        if (!term_colors[term_color_count].name) {
-            break;
-        }
-        term_color_count += 1;
-    }
-}
-
-const char *get_term_escape(int column) {
-    int idx = column % term_color_count;
-    return term_colors[idx].ctlseq;
-}
-
-#define COLOR_NO 0
-#define COLOR_AUTO 1
-#define COLOR_ALWAYS 2
-
-bool get_use_colors(int use_colors, FILE *out)
-{
-    switch (use_colors) {
-    case COLOR_NO:
-        return false;
-    case COLOR_ALWAYS:
-        return true;
-    case COLOR_AUTO:
-        return isatty(fileno(out));
-    }
-    assert(false);
 }
 
 static void do_print_multicolumn(const Difdef::Diff &diff, FILE *out, int use_colors)
