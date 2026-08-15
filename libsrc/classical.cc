@@ -75,7 +75,7 @@ void Difdef_impl::add_vec_to_diff_classical(Difdef::Diff &a,
     assert(this->NUM_FILES == a.dimension);
     assert(0 <= fileid && fileid < a.dimension && a.dimension <= Difdef::MAX_FILES);
 
-    const mask_t bmask = (1u << fileid);
+    const mask_t bmask = ((mask_t)1 << fileid);
 
     /* We are guaranteed that the input doesn't have a common prefix; our caller
      * should have taken care of that. The input may indeed have a common suffix. */

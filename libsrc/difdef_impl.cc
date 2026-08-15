@@ -254,7 +254,7 @@ static Difdef::Diff &slide_diff_windows(Difdef::Diff &d)
 }
 
 
-Difdef::Diff Difdef_impl::merge(unsigned int fmask) const
+Difdef::Diff Difdef_impl::merge(mask_t fmask) const
 {
     assert(this->lines.size() == (size_t)this->NUM_FILES);
     assert(0 < this->NUM_FILES && this->NUM_FILES <= Difdef::MAX_FILES);
@@ -275,7 +275,7 @@ void Difdef_impl::add_vec_to_diff(Difdef::Diff &a, int fileid, const std::vector
     assert(this->NUM_FILES == a.dimension);
     assert(0 <= fileid && fileid < a.dimension && a.dimension <= Difdef::MAX_FILES);
 
-    const mask_t bmask = (1u << fileid);
+    const mask_t bmask = ((mask_t)1 << fileid);
     assert((a.mask & bmask) == 0);
     Difdef::Diff result(a.dimension, a.mask | bmask);
     Difdef::Diff suffix(a.dimension, a.mask | bmask);
