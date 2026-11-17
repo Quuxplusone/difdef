@@ -191,7 +191,7 @@ static inline bool contains(mask_t mortals, mask_t men)
 }
 
 
-static Difdef::Diff &slide_diff_windows(Difdef::Diff &d)
+static void slide_diff_windows(Difdef::Diff &d)
 {
     /* As a special heuristic to produce nice merges for source code in
      * curly-brace languages, let's try to make differing ranges end with
@@ -249,8 +249,6 @@ static Difdef::Diff &slide_diff_windows(Difdef::Diff &d)
             last_edge = i;
         }
     }
-    
-    return d;
 }
 
 
@@ -266,7 +264,8 @@ Difdef::Diff Difdef_impl::merge(mask_t fmask) const
         this->add_vec_to_diff(d, i, this->lines[i]);
     }
     
-    return slide_diff_windows(d);
+    slide_diff_windows(d);
+    return d;
 }
 
 
